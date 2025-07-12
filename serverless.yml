@@ -1,0 +1,192 @@
+org: devopmh
+app: grocery-store
+service: grocery-store
+
+package:
+  individually: true
+build:
+  esbuild:
+    minify: true
+
+plugins:
+  - serverless-plugin-log-retention
+  - serverless-iam-roles-per-function
+
+stages:
+  dev:
+    params:
+      tableName: 'grocery-store-${sls:stage}'
+  prod:
+    params:
+      tableName: 'grocery-store-${sls:stage}'
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  logRetentionInDays: 7
+  versionFunctions: false
+  region: us-east-1
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - 'dynamodb:PutItem'
+            - 'dynamodb:GetItem'
+            - 'dynamodb:UpdateItem'
+            - 'dynamodb:DeleteItem'
+            - 'dynamodb:Query'
+            - 'dynamodb:DescribeTable'
+          Resource:
+            - 'arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${sls:stageParams.tableName}'
+            - 'arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${sls:stageParams.tableName}/index/*'
+
+resources:
+  Resources:
+    DynamoDBTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        TableName: '${sls:stageParams.tableName}'
+        BillingMode: PAY_PER_REQUEST
+
+        AttributeDefinitions:
+          - AttributeName: 'pk'
+            AttributeType: 'S'
+          - AttributeName: 'sk'
+            AttributeType: 'S'
+          - AttributeName: 'category'
+            AttributeType: 'S'
+          - AttributeName: 'brand'
+            AttributeType: 'S'
+          - AttributeName: 'priceBucket'
+            AttributeType: 'S'
+          - AttributeName: 'price'
+            AttributeType: 'N'
+          - AttributeName: 'stockBucket'
+            AttributeType: 'S'
+          - AttributeName: 'stock'
+            AttributeType: 'N'
+          - AttributeName: 'productName'
+            AttributeType: 'S'
+          - AttributeName: 'description'
+            AttributeType: 'S'
+
+        KeySchema:
+          - AttributeName: 'pk'
+            KeyType: 'HASH'
+          - AttributeName: 'sk'
+            KeyType: 'RANGE'
+
+        GlobalSecondaryIndexes:
+          - IndexName: 'categoryIndex'
+            KeySchema:
+              - AttributeName: 'category'
+                KeyType: 'HASH'
+              - AttributeName: 'pk'
+                KeyType: 'RANGE'
+            Projection:
+              ProjectionType: 'INCLUDE'
+              NonKeyAttributes:
+                - 'sk'
+                - 'brand'
+                - 'price'
+                - 'stock'
+            ProvisionedThroughput:
+              ReadCapacityUnits: 2
+              WriteCapacityUnits: 1
+
+          - IndexName: 'brandIndex'
+            KeySchema:
+              - AttributeName: 'brand'
+                KeyType: 'HASH'
+              - AttributeName: 'pk'
+                KeyType: 'RANGE'
+            Projection:
+              ProjectionType: 'INCLUDE'
+              NonKeyAttributes:
+                - 'sk'
+                - 'category'
+                - 'price'
+                - 'stock'
+            ProvisionedThroughput:
+              ReadCapacityUnits: 2
+              WriteCapacityUnits: 1
+
+          - IndexName: 'priceIndex'
+            KeySchema:
+              - AttributeName: 'priceBucket'
+                KeyType: 'HASH'
+              - AttributeName: 'price'
+                KeyType: 'RANGE'
+            Projection:
+              ProjectionType: 'INCLUDE'
+              NonKeyAttributes:
+                - 'pk'
+                - 'sk'
+                - 'category'
+                - 'brand'
+                - 'stock'
+            ProvisionedThroughput:
+              ReadCapacityUnits: 2
+              WriteCapacityUnits: 1
+
+          - IndexName: 'stockIndex'
+            KeySchema:
+              - AttributeName: 'stockBucket'
+                KeyType: 'HASH'
+              - AttributeName: 'stock'
+                KeyType: 'RANGE'
+            Projection:
+              ProjectionType: 'INCLUDE'
+              NonKeyAttributes:
+                - 'pk'
+                - 'sk'
+                - 'category'
+                - 'brand'
+                - 'price'
+            ProvisionedThroughput:
+              ReadCapacityUnits: 2
+              WriteCapacityUnits: 1
+
+functions:
+  create:
+    handler: handler.create
+    events:
+      - httpApi:
+          path: /create
+          method: post
+    environment:
+      TABLE_NAME: ${sls:stageParams.tableName}
+  get:
+    handler: handler.get
+    events:
+      - httpApi:
+          path: /get
+          method: get
+    environment:
+      TABLE_NAME: ${sls:stageParams.tableName}
+  getOne:
+    handler: handler.getOne
+    events:
+      - httpApi:
+          path: /get/{id}
+          method: get
+    environment:
+      TABLE_NAME: ${sls:stageParams.tableName}
+  update:
+    handler: handler.update
+    events:
+      - httpApi:
+          path: /update
+          method: put
+    environment:
+      TABLE_NAME: ${sls:stageParams.tableName}
+  delete:
+    handler: handler.delete
+    events:
+      - httpApi:
+          path: /delete
+          method: delete
+    environment:
+      TABLE_NAME: ${sls:stageParams.tableName}
+

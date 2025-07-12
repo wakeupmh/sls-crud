@@ -1,0 +1,59 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - feat/*
+      - fix/*
+      - refactor/*
+
+jobs:
+  deploy:
+    name: deploy
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.ref_name == 'main' && 'production' || 'development' }}
+
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+
+      - name: setup node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: install dependencies
+        run: npm ci
+
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: determine stage
+        id: determine_stage
+        run: |
+          if [[ '${{ github.ref_name }}' == 'main' ]]; then
+            echo 'STAGE=prod' >> $GITHUB_ENV
+            echo 'Deploying to production stage.'
+          elif [[ '${{ github.ref_name }}' == 'feat'* ]]; then
+            echo 'STAGE=dev' >> $GITHUB_ENV
+            echo 'Deploying to development stage.'
+          else
+            echo 'no deployment stage defined for branch ${{ github.ref_name }}. exiting.'
+            exit 1
+          fi
+
+      - name: deploy with serverless to ${{ env.STAGE }}
+        if: success() && env.STAGE
+        run: npx serverless deploy --stage ${{ env.STAGE }}
+        env:
+          NODE_ENV: production
+          SERVERLESS_ACCESS_KEY: ${{ secrets.SERVERLESS_ACCESS_KEY }}
