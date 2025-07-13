@@ -11,11 +11,19 @@ export default class CreateProduct {
 
 	async execute(productRequest: CreateProductRequest) {
 		try {
-			this.logger.debug("Creating product", productRequest);
+			this.logger.debug("Creating product");
+
+			const priceBucket = Math.floor(productRequest.price / 10);
 
 			const product: Product = {
-				pk: productRequest.sku,
-				sk: "DETAILS",
+				pk: `product#${productRequest.sku}`,
+				sk: productRequest.productName,
+				gsi1pk: `product#${productRequest.category}`,
+				gsi1sk: productRequest.productName,
+				gsi2pk: `product#${productRequest.brand}`,
+				gsi2sk: productRequest.productName,
+				gsi3pk: `product#${priceBucket}`,
+				gsi3sk: productRequest.productName,
 				productName: productRequest.productName,
 				category: productRequest.category,
 				brand: productRequest.brand,
@@ -23,6 +31,7 @@ export default class CreateProduct {
 				stock: productRequest.stock,
 				description: productRequest.description,
 			};
+			this.logger.debug("Product to be created", product);
 
 			await this.productsRepository.save(product);
 

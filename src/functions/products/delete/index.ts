@@ -7,7 +7,7 @@ import { deleteProductRequestSchema } from "./delete.request";
 
 const middlewareFactory = new MiddlewareFactory();
 const loggerProvider = new LoggerProvider();
-const productsRepository = new ProductsRepository();
+const productsRepository = new ProductsRepository(loggerProvider);
 const deleteProduct = new DeleteProduct(loggerProvider, productsRepository);
 
 const lambdaHandler = async (event: any, _: any) => {

@@ -1,9 +1,9 @@
-import type { ErrorType } from './error.type';
-import { ReportException } from './report.exception';
+import type { ErrorType } from "./error.type";
+import { ReportException } from "./report.exception";
 
 export class NotFoundException extends ReportException {
 	public httpCode = 404;
-	public code = 'not_found';
+	public code = "not_found";
 
 	constructor(message?: string, errors?: ErrorType[]) {
 		super(message, errors);

@@ -12,10 +12,9 @@ export default class GetOneProduct {
 		try {
 			this.logger.debug("Getting product", request);
 
-			const product = await this.productsRepository.getByPkAndSk({
-				pk: request.sku,
-				sk: "DETAILS",
-			});
+			const product = await this.productsRepository.getBySku(
+				`product#${request.sku}`,
+			);
 
 			this.logger.info("Product retrieved");
 

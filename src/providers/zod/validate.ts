@@ -1,6 +1,6 @@
-import type { ZodType, z } from 'zod';
-import { ZodError } from 'zod';
-import { BadRequestException, SystemException } from '../../shared/errors';
+import type { ZodType, z } from "zod";
+import { ZodError } from "zod";
+import { BadRequestException, SystemException } from "../../shared/errors";
 
 export async function validate<T extends ZodType>(
 	schema: T,
@@ -10,7 +10,7 @@ export async function validate<T extends ZodType>(
 		return await schema.parseAsync(objectToValidate);
 	} catch (error: any) {
 		if (error instanceof ZodError) {
-			throw new BadRequestException('bad request', error.issues);
+			throw new BadRequestException("bad request", error.issues);
 		}
 		throw new BadRequestException(error);
 	}
@@ -26,7 +26,7 @@ export async function validateCSV<T extends ZodType>(
 			throw new Error(
 				error.issues
 					.map((issue) => `${issue.path} - ${issue.message}`)
-					.join(','),
+					.join(","),
 			);
 		}
 		const errorMessage = (error as Error).message;
@@ -44,7 +44,7 @@ export async function validateQueueRequest<T extends ZodType>(
 			throw new SystemException(
 				error.issues
 					.map((issue) => `${issue.path} - ${issue.message}`)
-					.join(','),
+					.join(","),
 			);
 		}
 		const errorMessage = (error as SystemException).message;

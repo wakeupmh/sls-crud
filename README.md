@@ -64,18 +64,6 @@ The priceBucket attribute (e.g., `hash(SKU) % N`, where `N` is the number of buc
 
 Projection: INCLUDE (Specific attributes: pk, sk, category, brand, stock, name, description).
 
-### stockIndex
-
-Purpose: Facilitates identification of products with low stock levels
-
-`PK: stockBucket (String - HASH)`
-
-`SK: stock (Number - RANGE)`
-
-Similar to `priceIndex`, a sharding strategy using `stockBucket` (e.g., hash(SKU) % N) is employed to distribute load and prevent hot partitions when querying for stock thresholds, `stock` functions as the sort key for range-based stock level queries
-
-Projection: INCLUDE (Specific attributes: pk, sk, category, brand, price, name, description)
-
 ## Deployment Workflow (GitHub Actions)
 The CI/CD pipeline is established using GitHub Actions to automate the deployment of the serverless application
 

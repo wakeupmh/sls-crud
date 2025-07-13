@@ -7,7 +7,7 @@ import { createProductRequestSchema } from "./create.request";
 
 const middlewareFactory = new MiddlewareFactory();
 const loggerProvider = new LoggerProvider();
-const productsRepository = new ProductsRepository();
+const productsRepository = new ProductsRepository(loggerProvider);
 
 const createProduct = new CreateProduct(loggerProvider, productsRepository);
 

@@ -1,1 +1,1 @@
-export * from './middleware.factory';
+export * from "./middleware.factory";

@@ -1,9 +1,9 @@
-import type { ErrorType } from './error.type';
-import { ReportException } from './report.exception';
+import type { ErrorType } from "./error.type";
+import { ReportException } from "./report.exception";
 
 export class ForbiddenError extends ReportException {
 	public httpCode = 403;
-	public code = 'forbidden';
+	public code = "forbidden";
 
 	constructor(message?: string, errors?: ErrorType[]) {
 		super(message, errors);

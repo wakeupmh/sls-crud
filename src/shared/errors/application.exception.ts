@@ -1,4 +1,4 @@
-import type { ErrorType } from './error.type';
+import type { ErrorType } from "./error.type";
 
 interface MappedErrorContent {
 	en: string;
@@ -7,15 +7,15 @@ interface MappedErrorContent {
 
 export class ApplicationException extends Error {
 	public httpCode = 500;
-	public code = 'application_exception';
+	public code = "application_exception";
 	public errors: ErrorType[] = [];
 	public currentError = {} as MappedErrorContent;
 	public provider?: string;
 
 	constructor(
-		message = 'No message provided!',
+		message = "No message provided!",
 		errors: ErrorType[] = [],
-		provider = '',
+		provider = "",
 	) {
 		super(message);
 		this.errors = errors;

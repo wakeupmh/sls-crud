@@ -7,7 +7,7 @@ import { getOneProductRequestSchema } from "./get-one.request";
 
 const middlewareFactory = new MiddlewareFactory();
 const loggerProvider = new LoggerProvider();
-const productsRepository = new ProductsRepository();
+const productsRepository = new ProductsRepository(loggerProvider);
 
 async function lambdaHandler(event: any, _: any) {
 	const request = await validate(getOneProductRequestSchema, {

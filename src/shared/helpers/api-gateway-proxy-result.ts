@@ -24,7 +24,7 @@ export const makeAPIGatewayProxyResult = <T>(
 		body: JSON.stringify(body),
 		statusCode: status ?? HTTP_STATUS.OK,
 		headers: {
-			'Access-Control-Allow-Origin': '*',
+			"Access-Control-Allow-Origin": "*",
 			...headers,
 		},
 		isBase64Encoded: false,
@@ -36,9 +36,9 @@ export const makeAPIGatewayProxyCSVResult = (body: string): any => {
 		body,
 		statusCode: HTTP_STATUS.OK,
 		headers: {
-			'Access-Control-Allow-Origin': '*',
-			'Content-Type': 'text/csv',
-			'Content-disposition': 'attachment; filename=employees.csv',
+			"Access-Control-Allow-Origin": "*",
+			"Content-Type": "text/csv",
+			"Content-disposition": "attachment; filename=employees.csv",
 		},
 	};
 };

@@ -1,18 +1,24 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
+	DynamoDBClient,
+	QueryCommand,
+	QueryCommandInput,
+} from "@aws-sdk/client-dynamodb";
+import {
+	BatchGetCommand,
 	DeleteCommand,
 	DynamoDBDocumentClient,
 	GetCommand,
 	PutCommand,
 } from "@aws-sdk/lib-dynamodb";
 import type { Product } from "../domain/products";
+import type LoggerProvider from "../providers/logging/logger";
 import { SystemException } from "../shared/errors";
 
 export default class ProductsRepository {
 	private readonly tableName: string;
 	private readonly docClient: DynamoDBDocumentClient;
 
-	constructor() {
+	constructor(private readonly logger: LoggerProvider) {
 		const client = new DynamoDBClient({
 			region: process.env.AWS_REGION || "us-east-1",
 			maxAttempts: 3,
@@ -35,34 +41,30 @@ export default class ProductsRepository {
 	}
 
 	async save(product: Product): Promise<void> {
-		const priceBucket = Math.floor(product.price / 10);
-		const stockBucket = Math.floor(product.stock / 10);
-
-		product.priceBucket = priceBucket.toString();
-		product.stockBucket = stockBucket.toString();
-
 		const params = {
 			TableName: this.tableName,
 			Item: product,
-			ConditionExpression: "attribute_not_exists(sk)",
+			ConditionExpression: "attribute_not_exists(pk)",
 		};
 		await this.docClient.send(new PutCommand(params));
 	}
 
-	async delete(sku: string): Promise<void> {
+	async delete(pk: string): Promise<void> {
 		const params = {
 			TableName: this.tableName,
 			Key: {
-				pk: sku,
+				pk,
 			},
 		};
 		await this.docClient.send(new DeleteCommand(params));
 	}
 
-	async getByPkAndSk(key: { pk: string; sk: string }): Promise<Product | null> {
+	async getBySku(pk: string): Promise<Product | null> {
 		const params = {
 			TableName: this.tableName,
-			Key: key,
+			Key: {
+				pk,
+			},
 		};
 		const result = await this.docClient.send(new GetCommand(params));
 		return result.Item as Product | null;
