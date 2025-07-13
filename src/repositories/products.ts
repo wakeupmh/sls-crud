@@ -2,6 +2,7 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
 	DeleteCommand,
 	DynamoDBDocumentClient,
+	GetCommand,
 	PutCommand,
 } from "@aws-sdk/lib-dynamodb";
 import type { Product } from "../domain/products";
@@ -56,5 +57,14 @@ export default class ProductsRepository {
 			},
 		};
 		await this.docClient.send(new DeleteCommand(params));
+	}
+
+	async getByPkAndSk(key: { pk: string; sk: string }): Promise<Product | null> {
+		const params = {
+			TableName: this.tableName,
+			Key: key,
+		};
+		const result = await this.docClient.send(new GetCommand(params));
+		return result.Item as Product | null;
 	}
 }
