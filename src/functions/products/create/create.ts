@@ -4,13 +4,10 @@ import type ProductsRepository from "../../../repositories/products";
 import type { CreateProductRequest } from "./create.request";
 
 export default class CreateProduct {
-	private readonly logger: LoggerProvider;
-	private readonly productsRepository: ProductsRepository;
-
-	constructor(logger: LoggerProvider, productsRepository: ProductsRepository) {
-		this.logger = logger;
-		this.productsRepository = productsRepository;
-	}
+	constructor(
+		private readonly logger: LoggerProvider,
+		private readonly productsRepository: ProductsRepository,
+	) {}
 
 	async execute(productRequest: CreateProductRequest) {
 		try {

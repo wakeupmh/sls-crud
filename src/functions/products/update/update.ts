@@ -4,13 +4,10 @@ import { BadRequestException } from "../../../shared/errors";
 import type { UpdateProductRequest } from "./update.request";
 
 export default class UpdateProduct {
-	private logger: LoggerProvider;
-	private productsRepository: ProductsRepository;
-
-	constructor(logger: LoggerProvider, productsRepository: ProductsRepository) {
-		this.logger = logger;
-		this.productsRepository = productsRepository;
-	}
+	constructor(
+		private readonly logger: LoggerProvider,
+		private readonly productsRepository: ProductsRepository,
+	) {}
 
 	async execute(request: UpdateProductRequest) {
 		try {

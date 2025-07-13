@@ -3,13 +3,10 @@ import type ProductsRepository from "../../../repositories/products";
 import type { DeleteProductRequest } from "./delete.request";
 
 export default class DeleteProduct {
-	private readonly logger: LoggerProvider;
-	private readonly productsRepository: ProductsRepository;
-
-	constructor(logger: LoggerProvider, productsRepository: ProductsRepository) {
-		this.logger = logger;
-		this.productsRepository = productsRepository;
-	}
+	constructor(
+		private readonly logger: LoggerProvider,
+		private readonly productsRepository: ProductsRepository,
+	) {}
 
 	async execute(request: DeleteProductRequest) {
 		try {
