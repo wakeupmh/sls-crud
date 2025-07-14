@@ -23,18 +23,20 @@ export default class UpdateProduct {
       const updatedProduct = {
         pk: `product#${productRequest.sku}` || product.pk,
         sk: `product#${productRequest.sku}` || product.sk,
-        pkBrand: `brand#${productRequest.brand}` || product.pkBrand,
-        skBrand:
-          `category#${productRequest.category}#price#${productRequest.price}` ||
-          product.skBrand,
-        pkCategory: `category#${productRequest.category}` || product.pkCategory,
-        skCategory:
+        sku: productRequest.sku || product.sku,
+        pkBrandPrice:
           `brand#${productRequest.brand}#price#${productRequest.price}` ||
-          product.skCategory,
+          product.pkBrandPrice,
+        skBrandPrice: `price#${productRequest.price}` || product.skBrandPrice,
+        pkCategoryBrandPrice:
+          `category#${productRequest.category}#brand#${productRequest.brand}#price#${productRequest.price}` ||
+          product.pkCategoryBrandPrice,
+        skCategoryBrandPrice:
+          `brand#${productRequest.brand}#price#${productRequest.price}` ||
+          product.skCategoryBrandPrice,
         pkProduct: `type#${productRequest.productName}` || product.pkProduct,
         skProduct:
           `productName#${productRequest.productName}` || product.skProduct,
-        pkPrice: `price#${productRequest.price}` || product.pkPrice,
         stock: productRequest.stock || product.stock,
         price: productRequest.price || product.price,
         productName: productRequest.productName || product.productName,

@@ -116,42 +116,42 @@ resources:
           ProjectionType: 'ALL'
 functions:
   create:
-    handler: handler.create
+    handler: src/functions/products/create/index.handler
     events:
       - httpApi:
-          path: /create
+          path: /products/create
           method: post
     environment:
       TABLE_NAME: ${sls:stageParams.tableName}
   get:
-    handler: handler.get
+    handler: src/functions/products/get/index.handler
     events:
       - httpApi:
-          path: /get
+          path: /products/get
           method: get
     environment:
       TABLE_NAME: ${sls:stageParams.tableName}
   getOne:
-    handler: handler.getOne
+    handler: src/functions/products/get-one/index.handler
     events:
       - httpApi:
-          path: /get/{id}
+          path: /products/get/{id}
           method: get
     environment:
       TABLE_NAME: ${sls:stageParams.tableName}
   update:
-    handler: handler.update
+    handler: src/functions/products/update/index.handler
     events:
       - httpApi:
-          path: /update
+          path: /products/update
           method: put
     environment:
       TABLE_NAME: ${sls:stageParams.tableName}
   delete:
-    handler: handler.delete
+    handler: src/functions/products/delete/index.handler
     events:
       - httpApi:
-          path: /delete
+          path: /products/delete
           method: delete
     environment:
       TABLE_NAME: ${sls:stageParams.tableName}
