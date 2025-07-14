@@ -1,9 +1,9 @@
-import type { ErrorType } from './error.type';
-import { ReportException } from './report.exception';
+import type { ErrorType } from "./error.type";
+import { ReportException } from "./report.exception";
 
 export class BadRequestException extends ReportException {
 	public httpCode = 400;
-	public code = 'bad_request';
+	public code = "bad_request";
 
 	constructor(message?: string, errors?: ErrorType[]) {
 		super(message, errors);

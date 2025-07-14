@@ -5,15 +5,15 @@ export const parseBodyMiddleware = () => {
 		}
 
 		try {
-			if (typeof request.event.body === 'string') {
+			if (typeof request.event.body === "string") {
 				try {
 					request.event.body = JSON.parse(request.event.body);
 				} catch (parseError) {
-					console.error('Error parsing request body:', parseError);
+					console.error("Error parsing request body:", parseError);
 				}
 			}
 		} catch (error) {
-			console.error('Error in parseBodyMiddleware:', error);
+			console.error("Error in parseBodyMiddleware:", error);
 		}
 	};
 

@@ -1,0 +1,45 @@
+import type { Product } from "../../../domain/products";
+import type LoggerProvider from "../../../providers/logging/logger";
+import type ProductsRepository from "../../../repositories/products";
+import type { CreateProductRequest } from "./create.request";
+
+export default class CreateProduct {
+  constructor(
+    private readonly logger: LoggerProvider,
+    private readonly productsRepository: ProductsRepository,
+  ) {}
+
+  async execute(productRequest: CreateProductRequest) {
+    try {
+      this.logger.debug("Creating product");
+
+      const product: Product = {
+        pk: `product#${productRequest.sku}`,
+        sk: `product#${productRequest.sku}`,
+        sku: productRequest.sku,
+        pkBrandPrice: `brand#${productRequest.brand}#price#${productRequest.price}`,
+        skBrandPrice: `price#${productRequest.price}`,
+        pkCategoryBrandPrice: `category#${productRequest.category}#brand#${productRequest.brand}#price#${productRequest.price}`,
+        skCategoryBrandPrice: `brand#${productRequest.brand}#price#${productRequest.price}`,
+        pkProduct: `type#${productRequest.productName}`,
+        skProduct: `productName#${productRequest.productName}`,
+        stock: productRequest.stock,
+        price: productRequest.price,
+        productName: productRequest.productName,
+        category: productRequest.category,
+        brand: productRequest.brand,
+        description: productRequest.description,
+      };
+      this.logger.debug("Product to be created", product);
+
+      await this.productsRepository.save(product);
+
+      this.logger.info("Product created");
+
+      return product;
+    } catch (error) {
+      this.logger.error("Error creating product", error);
+      throw error;
+    }
+  }
+}

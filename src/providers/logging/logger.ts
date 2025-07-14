@@ -1,23 +1,30 @@
-
-import { Logger } from '@aws-lambda-powertools/logger';
+import { Logger } from "@aws-lambda-powertools/logger";
 
 export default class LoggerProvider {
 	private logger: Logger;
 	constructor() {
 		this.logger = new Logger({
-      serviceName: 'grocery-store'
-    });
+			serviceName: "grocery-store",
+			logBufferOptions: {
+				flushOnErrorLog: true,
+				enabled: true,
+			},
+		});
 	}
 
-	info(message: string) {
-		this.logger.info(message);
+	debug(message: string, data?: any) {
+		this.logger.debug(message, data);
 	}
 
-	warn(message: string) {
-		this.logger.warn(message);
+	info(message: string, data?: any) {
+		this.logger.info(message, data);
 	}
 
-	error(message: string) {
-		this.logger.error(message);
+	warn(message: string, data?: any) {
+		this.logger.warn(message, data);
+	}
+
+	error(message: string, data?: any) {
+		this.logger.error(message, data);
 	}
 }

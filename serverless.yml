@@ -43,149 +43,115 @@ provider:
 
 resources:
   Resources:
-    DynamoDBTable:
-      Type: 'AWS::DynamoDB::Table'
-      Properties:
-        TableName: '${sls:stageParams.tableName}'
-        BillingMode: PAY_PER_REQUEST
+   DynamoDBTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      TableName: '${sls:stageParams.tableName}'
+      BillingMode: PAY_PER_REQUEST
 
-        AttributeDefinitions:
-          - AttributeName: 'pk'
-            AttributeType: 'S'
-          - AttributeName: 'sk'
-            AttributeType: 'S'
-          - AttributeName: 'category'
-            AttributeType: 'S'
-          - AttributeName: 'brand'
-            AttributeType: 'S'
-          - AttributeName: 'priceBucket'
-            AttributeType: 'S'
-          - AttributeName: 'price'
-            AttributeType: 'N'
-          - AttributeName: 'stockBucket'
-            AttributeType: 'S'
-          - AttributeName: 'stock'
-            AttributeType: 'N'
-          - AttributeName: 'productName'
-            AttributeType: 'S'
-          - AttributeName: 'description'
-            AttributeType: 'S'
+    AttributeDefinitions:
+      - AttributeName: 'pk'
+        AttributeType: 'S'
+      - AttributeName: 'sk'
+        AttributeType: 'S'
+      - AttributeName: 'pkBrandPrice'
+        AttributeType: 'S'
+      - AttributeName: 'skBrandPrice'
+        AttributeType: 'S'
+      - AttributeName: 'pkCategoryBrandPrice'
+        AttributeType: 'S'
+      - AttributeName: 'skCategoryBrandPrice'
+        AttributeType: 'S'
+      - AttributeName: 'pkProduct'
+        AttributeType: 'S'
+      - AttributeName: 'skProduct'
+        AttributeType: 'S'
+      - AttributeName: 'stock'
+        AttributeType: 'N'
+      - AttributeName: 'price'
+        AttributeType: 'N'
 
+    KeySchema:
+      - AttributeName: 'pk'
+        KeyType: 'HASH'
+      - AttributeName: 'sk'
+        KeyType: 'RANGE'
+
+    GlobalSecondaryIndexes:
+      - IndexName: 'brandPriceIndex'
         KeySchema:
-          - AttributeName: 'pk'
+          - AttributeName: 'pkBrandPrice'
             KeyType: 'HASH'
-          - AttributeName: 'sk'
+          - AttributeName: 'skBrandPrice'
             KeyType: 'RANGE'
-
-        GlobalSecondaryIndexes:
-          - IndexName: 'categoryIndex'
-            KeySchema:
-              - AttributeName: 'category'
-                KeyType: 'HASH'
-              - AttributeName: 'pk'
-                KeyType: 'RANGE'
-            Projection:
-              ProjectionType: 'INCLUDE'
-              NonKeyAttributes:
-                - 'sk'
-                - 'brand'
-                - 'price'
-                - 'stock'
-            ProvisionedThroughput:
-              ReadCapacityUnits: 2
-              WriteCapacityUnits: 1
-
-          - IndexName: 'brandIndex'
-            KeySchema:
-              - AttributeName: 'brand'
-                KeyType: 'HASH'
-              - AttributeName: 'pk'
-                KeyType: 'RANGE'
-            Projection:
-              ProjectionType: 'INCLUDE'
-              NonKeyAttributes:
-                - 'sk'
-                - 'category'
-                - 'price'
-                - 'stock'
-            ProvisionedThroughput:
-              ReadCapacityUnits: 2
-              WriteCapacityUnits: 1
-
-          - IndexName: 'priceIndex'
-            KeySchema:
-              - AttributeName: 'priceBucket'
-                KeyType: 'HASH'
-              - AttributeName: 'price'
-                KeyType: 'RANGE'
-            Projection:
-              ProjectionType: 'INCLUDE'
-              NonKeyAttributes:
-                - 'pk'
-                - 'sk'
-                - 'category'
-                - 'brand'
-                - 'stock'
-            ProvisionedThroughput:
-              ReadCapacityUnits: 2
-              WriteCapacityUnits: 1
-
-          - IndexName: 'stockIndex'
-            KeySchema:
-              - AttributeName: 'stockBucket'
-                KeyType: 'HASH'
-              - AttributeName: 'stock'
-                KeyType: 'RANGE'
-            Projection:
-              ProjectionType: 'INCLUDE'
-              NonKeyAttributes:
-                - 'pk'
-                - 'sk'
-                - 'category'
-                - 'brand'
-                - 'price'
-            ProvisionedThroughput:
-              ReadCapacityUnits: 2
-              WriteCapacityUnits: 1
-
+        Projection:
+          ProjectionType: 'INCLUDE'
+          NonKeyAttributes:
+            - 'price'
+      - IndexName: 'categoryBrandPriceIndex'
+        KeySchema:
+          - AttributeName: 'pkCategoryBrandPrice'
+            KeyType: 'HASH'
+          - AttributeName: 'skCategoryBrandPrice'
+            KeyType: 'RANGE'
+        Projection:
+          ProjectionType: 'ALL'
+      - IndexName: 'productIndex'
+        KeySchema:
+          - AttributeName: 'pkProduct'
+            KeyType: 'HASH'
+          - AttributeName: 'skProduct'
+            KeyType: 'RANGE'
+        Projection:
+          ProjectionType: 'INCLUDE'
+          NonKeyAttributes:
+            - 'stock'
+      - IndexName: 'categoryPriceIndex'
+        KeySchema:
+          - AttributeName: 'pkCategoryPrice'
+            KeyType: 'HASH'
+          - AttributeName: 'price'
+            KeyType: 'RANGE'
+        Projection:
+          ProjectionType: 'ALL'
 functions:
   create:
-    handler: handler.create
+    handler: src/functions/products/create/index.handler
     events:
       - httpApi:
-          path: /create
+          path: /products/create
           method: post
     environment:
       TABLE_NAME: ${sls:stageParams.tableName}
   get:
-    handler: handler.get
+    handler: src/functions/products/get/index.handler
     events:
       - httpApi:
-          path: /get
+          path: /products/get
           method: get
     environment:
       TABLE_NAME: ${sls:stageParams.tableName}
   getOne:
-    handler: handler.getOne
+    handler: src/functions/products/get-one/index.handler
     events:
       - httpApi:
-          path: /get/{id}
+          path: /products/get/{id}
           method: get
     environment:
       TABLE_NAME: ${sls:stageParams.tableName}
   update:
-    handler: handler.update
+    handler: src/functions/products/update/index.handler
     events:
       - httpApi:
-          path: /update
+          path: /products/update
           method: put
     environment:
       TABLE_NAME: ${sls:stageParams.tableName}
   delete:
-    handler: handler.delete
+    handler: src/functions/products/delete/index.handler
     events:
       - httpApi:
-          path: /delete
+          path: /products/delete
           method: delete
     environment:
       TABLE_NAME: ${sls:stageParams.tableName}

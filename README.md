@@ -1,125 +1,233 @@
-# Serverless Grocery Store Product Catalog
-This repository encapsulates the infrastructure and deployment strategy for a highly scalable, serverless product catalog system designed for grocery store, additionaly it can handle hypermarket scale operations
+# Serverless Product Catalog API
 
-## Architectural Overview
-The system is architecturally composed of a DynamoDB table serving as the primary data store for product entities, complemented by Global Secondary Indexes (GSIs) to facilitate diverse access patterns
+A scalable, serverless product catalog system built with AWS Lambda, API Gateway, and DynamoDB. This solution provides a robust API for managing product inventory with advanced querying capabilities.
 
-Deployment automation is orchestrated via GitHub Actions, implementing a branch-based CI/CD pipeline for distinct development and production environments
+## Features
 
-AWS Lambda functions, defined within the Serverless Framework, provide the API endpoints for CRUD (Create, Read, Update, Delete) operations on product data. These Lambda functions are augmented with Middy for middleware management and AWS Lambda Powertools for enhanced observability
+- **RESTful API** for product management (CRUD operations)
+- **Advanced Querying** with filtering, sorting, and pagination
+- **Serverless Architecture** with automatic scaling
+- **TypeScript** for type safety and better developer experience
+- **Infrastructure as Code** using Serverless Framework
+- **CI/CD** with GitHub Actions
 
-## DynamoDB Schema Design
-The DynamoDB schema is meticulously engineered to address the unique challenges of a hypermarket environment, specifically high cardinality of product SKUs and disparate query patterns
+## API Endpoints
 
-### Single Table Design Pattern for Product Catalog
-#### Primary Key (PK): SKU (String - HASH)
+### Create Product
+- **Method**: POST
+- **Endpoint**: `/products/create`
+- **Request Body**:
+  ```json
+  {
+    "sku": "PROD123",
+    "productName": "Organic Apples",
+    "category": "Fruits",
+    "brand": "Organic Farms",
+    "price": 4.99,
+    "stock": 100,
+    "description": "Fresh organic apples"
+  }
+  ```
 
-The SKU (Stock Keeping Unit) serves as the singular identifier for each distinct product variant. This choice optimizes for uniform data distribution across DynamoDB partitions, mitigating the risk of "hot partitions" for direct item access. GetItem operations, critical for point-in-time lookups (for example, POS system integration)
+### Get Product by SKU
+- **Method**: GET
+- **Endpoint**: `/products/get/{sku}`
+- **Response**:
+  ```json
+  {
+    "sku": "PROD123",
+    "productName": "Organic Apples",
+    "category": "Fruits",
+    "brand": "Organic Farms",
+    "price": 4.99,
+    "stock": 100,
+    "description": "Fresh organic apples"
+  }
+  ```
 
-#### Sort Key (SK): DETAILS (String - RANGE)
+### List Products
+- **Method**: GET
+- **Endpoint**: `/products/get`
+- **Query Parameters**:
+  - `category` (string): Filter by category
+  - `brand` (string): Filter by brand
+  - `productName` (string): Search by product name (partial match)
+  - `minPrice` (number): Minimum price filter
+  - `maxPrice` (number): Maximum price filter
+  - `orderBy` (string): Field to sort by (name, price, stock, category, brand)
+  - `orderDirection` (string): Sort direction (ASC or DESC)
+  - `page` (number): Page number (default: 1)
+  - `pageSize` (number): Items per page (default: 20)
 
-A static SK value (DETAILS) is employed here.
-Given the SKU's inherent uniqueness, the SK is not required for disambiguation, so it is not used for queries, this design simplifies item modeling while preserving extensibility for potential future multi-record per SKU scenarios (for example versioning, localized data)
+### Update Product
+- **Method**: PUT
+- **Endpoint**: `/products/update`
+- **Request Body**:
+  ```json
+  {
+    "sku": "PROD123",
+    "price": 5.49,
+    "stock": 85
+  }
+  ```
+  > Note: Only include fields that need to be updated
 
-`Billing Mode: PAY_PER_REQUEST (On-Demand)`
+### Delete Product
+- **Method**: DELETE
+- **Endpoint**: `/products/delete`
+- **Request Body**:
+  ```json
+  {
+    "sku": "PROD123"
+  }
+  ```
 
+## Data Model
 
-### Global Secondary Indexes (GSIs)
-GSIs are indispensable for enabling efficient query patterns that do not align with the primary key of the base table. Each GSI maintains its own partition key and sort key, providing alternative access paths to the data
+### Product
+```typescript
+{
+  sku: string;            // Unique identifier (Primary Key)
+  productName: string;    // Name of the product
+  description: string;    // Product description
+  price: number;         // Product price
+  stock: number;         // Available quantity in stock
+  category: string;      // Product category
+  brand: string;         // Product brand
+}
+```
 
-### CategoryIndex
+## DynamoDB Schema
 
-Facilitates retrieval of all products belonging to a specific category
+The system uses a single-table design with the following access patterns:
 
-`PK: category (String - HASH)`
+### Primary Table
+- **Partition Key (HASH)**: `pk` (string) - Stores the product SKU
+- **Sort Key (RANGE)**: `sk` (string) - Used for data organization
 
-`SK: pk (String - RANGE, mapping to SKU from the base table)`
+### Global Secondary Indexes (GSI)
+1. **brandPriceIndex**
+   - PK: `brand`
+   - SK: `price`
+   - Enables querying products by brand with price filtering
 
-Category serves as a natural partition key for category-based queries. Using pk (SKU) as the sort key enables lexicographical sorting within a category and ensures uniqueness for composite keys
+2. **categoryBrandPriceIndex**
+   - PK: `category`
+   - SK: `brand#price`
+   - Enables querying products by category and brand with price filtering
 
-Projection: INCLUDE (Specific attributes: sk, brand, price, stock, name, description)
+3. **productIndex**
+   - PK: `productName`
+   - Enables searching products by name
 
-### brandIndex
+4. **categoryPriceIndex**
+   - PK: `category`
+   - SK: `price`
+   - Enables querying products by category with price filtering
 
-Enables retrieval of all products belonging to a specific brand.
+## Getting Started
 
-`PK: brand (String - HASH)`
+### Prerequisites
 
-`SK: pk (String - RANGE, mapping to SKU from the base table)`
+- Node.js 20.x
+- npm or yarn
+- AWS CLI configured with your credentials
+- Serverless Framework CLI installed globally (`npm install -g serverless`)
 
-brand provides an effective partition key for brand-centric access patterns. pk (SKU) as the sort key allows for ordered retrieval and uniqueness
+### Installation
 
-Projection: INCLUDE (Specific attributes: sk, category, price, stock, name, description)
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   yarn install
+   # or
+   npm install
+   ```
+3. Create a `.env` file in the root directory with the following variables:
+   ```
+   AWS_ACCESS_KEY_ID=your_access_key
+   AWS_SECRET_ACCESS_KEY=your_secret_key
+   AWS_REGION=us-east-1  # or your preferred region
+   STAGE=dev            # or 'prod' for production
+   ```
 
-### priceIndex
+### Local Development
 
-Supports range queries on product prices
+To run the API locally with serverless-offline:
 
-`PK: priceBucket (String - HASH)`
+```bash
+yarn dev
+# or
+npm run dev
+```
 
-`SK: price (Number - RANGE)`
+### Deployment
 
-To circumvent "hot partition" issues inherent in querying numerical ranges across a single partition, a sharding strategy is implemented.
-The priceBucket attribute (e.g., `hash(SKU) % N`, where `N` is the number of buckets, in this case we are using `10`) distributes write and read operations across multiple logical partitions, price then acts as the sort key for efficient range filtering. Application-side logic is required to query all N buckets concurrently and aggregate results.
+Deploy to AWS:
 
-Projection: INCLUDE (Specific attributes: pk, sk, category, brand, stock, name, description).
+```bash
+yarn deploy
+# or
+npm run deploy
+```
 
-### stockIndex
+This will deploy the application to the specified stage (dev/prod).
 
-Purpose: Facilitates identification of products with low stock levels
+## Project Structure
 
-`PK: stockBucket (String - HASH)`
+```
+.
+├── src/
+│   ├── functions/          # Lambda function handlers
+│   │   └── products/       # Product-related functions
+│   │       ├── create/     # Create product handler
+│   │       ├── delete/     # Delete product handler
+│   │       ├── get/        # List products handler
+│   │       ├── get-one/    # Get single product handler
+│   │       └── update/     # Update product handler
+│   ├── libs/               # Shared utilities and middleware
+│   ├── repositories/       # Data access layer
+│   └── types/              # TypeScript type definitions
+├── tests/                  # Test files
+├── serverless.yml          # Serverless configuration
+├── tsconfig.json           # TypeScript configuration
+└── package.json            # Project dependencies
+```
 
-`SK: stock (Number - RANGE)`
+## Testing
 
-Similar to `priceIndex`, a sharding strategy using `stockBucket` (e.g., hash(SKU) % N) is employed to distribute load and prevent hot partitions when querying for stock thresholds, `stock` functions as the sort key for range-based stock level queries
+Run unit tests:
 
-Projection: INCLUDE (Specific attributes: pk, sk, category, brand, price, name, description)
+```bash
+yarn test
+# or
+npm test
+```
 
-## Deployment Workflow (GitHub Actions)
-The CI/CD pipeline is established using GitHub Actions to automate the deployment of the serverless application
+Run integration tests (requires local DynamoDB):
 
-### Branching Strategy
-`feat/*` branches: Pushes to any branch prefixed with `feat/` (e.g., `feat/new-feature-x`) trigger a deployment to the `dev` stage. This facilitates rapid iteration and testing in a non-production environment
+```bash
+yarn test:integration
+# or
+npm run test:integration
+```
 
-`main` branch: Pushes to the `main` branch trigger a deployment to the `prod` stage. This ensures that only stable, reviewed code reaches the production environment
+## CI/CD
 
-### Workflow Steps
-The deploy.yml workflow orchestrates the following sequence:
-- Checkout code: Retrieves the repository content
-- Setup Node.js: Configures the Node.js runtime (v20) and caches npm dependencies for accelerated build times
-- Install dependencies: Executes `npm ci` to install project dependencies, ensuring a clean and reproducible installation
-- Configure AWS Credentials: Utilizes `aws-actions/configure-aws-credentials` to authenticate with AWS using repository secrets (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`)
-- Determine Stage: A shell script step dynamically ascertains the deployment stage (`dev` or `prod`) based on the `github.ref_name` (branch name). This value is exported as an environment variable (`STAGE`). The job fails if no matching stage is identified
-- Deploy with Serverless to `${{ env.STAGE }}`: Invokes the Serverless Framework's deploy command, passing the determined stage (`--stage ${{ env.STAGE }}`)
-- The `SERVERLESS_ACCESS_KEY` is provided via repository secrets for Serverless Dashboard integration
+The project includes GitHub Actions workflows for automated testing and deployment:
+
+- Pushes to `feat/*` branches trigger deployment to the `dev` environment
+- Pushes to `main` branch trigger deployment to the `prod` environment
 
 ### Required Secrets
-The following secrets must be configured in your GitHub repository settings:
 
-- `AWS_ACCESS_KEY_ID`: AWS Access Key ID with sufficient permissions for DynamoDB and Lambda deployments
+The following secrets must be configured in your GitHub repository:
 
-- `AWS_SECRET_ACCESS_KEY`: Corresponding AWS Secret Access Key
+- `AWS_ACCESS_KEY_ID`: AWS access key with deployment permissions
+- `AWS_SECRET_ACCESS_KEY`: Corresponding AWS secret key
+- `AWS_REGION`: AWS region for deployment
+- `SERVERLESS_ACCESS_KEY`: Serverless Framework access key
 
-- `AWS_REGION`: The AWS region for deployment (e.g., sa-east-1)
+## License
 
-- `SERVERLESS_ACCESS_KEY`: Your Serverless Framework access key for dashboard integration
-
-### Local Development and Code Quality
-To set up the project locally:
-
-- Clone the repository
-- Ensure Node.js v20 is installed
-- Install project dependencies: `npm ci`
-- Configure AWS CLI with appropriate credentials
-- Deploy to a development stage: `npx serverless deploy --stage dev`
-
-### Code Quality and Pre-commit Hooks
-This project enforces code quality standards through automated tooling integrated into the development workflow:
-
-- *Biome*: Utilized for comprehensive code formatting (npm run format) and linting (npm run lint), ensuring consistent code style and identifying potential issues
-- *Lefthook*: Configured as a Git pre-commit hook manager. It automatically executes biome's formatting and linting checks prior to commit, preventing non-compliant code from entering the version control system. This ensures a clean and consistent codebase
-
-### Testing
-- Execute unit tests: `npm test`
-- Run integration tests: `npm run test:integration` (requires .env file configuration)
+MIT

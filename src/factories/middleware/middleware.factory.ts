@@ -1,11 +1,11 @@
-import type { MiddyfiedHandler } from '@middy/core';
-import middy from '@middy/core';
+import type { MiddyfiedHandler } from "@middy/core";
+import middy from "@middy/core";
 
 import {
 	createResponseMiddleware,
 	errorResponseMiddleware,
 	parseBodyMiddleware,
-} from '../../shared/middlewares';
+} from "../../shared/middlewares";
 
 export type CreateMiddlewareProps = {
 	withDefault?: boolean;

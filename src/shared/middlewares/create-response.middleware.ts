@@ -1,5 +1,5 @@
-import type { Pagination } from '../dto/response';
-import { makeAPIGatewayProxyResult } from '../helpers/api-gateway-proxy-result';
+import type { Pagination } from "../dto/response";
+import { makeAPIGatewayProxyResult } from "../helpers/api-gateway-proxy-result";
 
 export type ResponseToMiddleware = {
 	statusCode: number;
