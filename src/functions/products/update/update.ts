@@ -4,48 +4,53 @@ import { BadRequestException } from "../../../shared/errors";
 import type { UpdateProductRequest } from "./update.request";
 
 export default class UpdateProduct {
-	constructor(
-		private readonly logger: LoggerProvider,
-		private readonly productsRepository: ProductsRepository,
-	) {}
+  constructor(
+    private readonly logger: LoggerProvider,
+    private readonly productsRepository: ProductsRepository,
+  ) {}
 
-	async execute(productRequest: UpdateProductRequest) {
-		try {
-			this.logger.debug("Updating product", productRequest);
-			const product = await this.productsRepository.getBySku(
-				`product#${productRequest.sku}`,
-			);
+  async execute(productRequest: UpdateProductRequest) {
+    try {
+      this.logger.debug("Updating product", productRequest);
+      const product = await this.productsRepository.getBySku(
+        `product#${productRequest.sku}`,
+      );
 
-			if (!product) {
-				throw new BadRequestException("Product not found");
-			}
-			const priceBucket = Math.floor(productRequest.price / 10);
+      if (!product) {
+        throw new BadRequestException("Product not found");
+      }
 
-			const updatedProduct = {
-				pk: `product#${productRequest.sku}` || product.pk,
-				sk: productRequest.productName || product.sk,
-				gsi1pk: `product#${productRequest.category}` || product.gsi1pk,
-				gsi1sk: productRequest.productName || product.gsi1sk,
-				gsi2pk: `product#${productRequest.brand}` || product.gsi2pk,
-				gsi2sk: productRequest.productName || product.gsi2sk,
-				gsi3pk: `product#${priceBucket}` || product.gsi3pk,
-				gsi3sk: productRequest.productName || product.gsi3sk,
-				productName: productRequest.productName || product.productName,
-				category: productRequest.category || product.category,
-				brand: productRequest.brand || product.brand,
-				price: productRequest.price || product.price,
-				stock: productRequest.stock || product.stock,
-				description: productRequest.description || product.description,
-			};
-			this.logger.debug("Product to be updated", updatedProduct);
+      const updatedProduct = {
+        pk: `product#${productRequest.sku}` || product.pk,
+        sk: `product#${productRequest.sku}` || product.sk,
+        pkBrand: `brand#${productRequest.brand}` || product.pkBrand,
+        skBrand:
+          `category#${productRequest.category}#price#${productRequest.price}` ||
+          product.skBrand,
+        pkCategory: `category#${productRequest.category}` || product.pkCategory,
+        skCategory:
+          `brand#${productRequest.brand}#price#${productRequest.price}` ||
+          product.skCategory,
+        pkProduct: `type#${productRequest.productName}` || product.pkProduct,
+        skProduct:
+          `productName#${productRequest.productName}` || product.skProduct,
+        pkPrice: `price#${productRequest.price}` || product.pkPrice,
+        stock: productRequest.stock || product.stock,
+        price: productRequest.price || product.price,
+        productName: productRequest.productName || product.productName,
+        category: productRequest.category || product.category,
+        brand: productRequest.brand || product.brand,
+        description: productRequest.description || product.description,
+      };
+      this.logger.debug("Product to be updated", updatedProduct);
 
-			await this.productsRepository.save(updatedProduct);
+      await this.productsRepository.save(updatedProduct);
 
-			this.logger.info("Product updated");
-			return updatedProduct;
-		} catch (error) {
-			this.logger.error("Error updating product", error);
-			throw error;
-		}
-	}
+      this.logger.info("Product updated");
+      return updatedProduct;
+    } catch (error) {
+      this.logger.error("Error updating product", error);
+      throw error;
+    }
+  }
 }

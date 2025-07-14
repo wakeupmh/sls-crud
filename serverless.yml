@@ -43,98 +43,77 @@ provider:
 
 resources:
   Resources:
-    DynamoDBTable:
-      Type: 'AWS::DynamoDB::Table'
-      Properties:
-        TableName: '${sls:stageParams.tableName}'
-        BillingMode: PAY_PER_REQUEST
+   DynamoDBTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      TableName: '${sls:stageParams.tableName}'
+      BillingMode: PAY_PER_REQUEST
 
-        AttributeDefinitions:
-          - AttributeName: 'pk'
-            AttributeType: 'S'
-          - AttributeName: 'sk'
-            AttributeType: 'S'
-          - AttributeName: 'category'
-            AttributeType: 'S'
-          - AttributeName: 'brand'
-            AttributeType: 'S'
-          - AttributeName: 'gsi1pk'
-            AttributeType: 'S'
-          - AttributeName: 'gsi1sk'
-            AttributeType: 'S'
-          - AttributeName: 'gsi2pk'
-            AttributeType: 'S'
-          - AttributeName: 'gsi2sk'
-            AttributeType: 'S'
-          - AttributeName: 'gsi3pk'
-            AttributeType: 'S'
-          - AttributeName: 'gsi3sk'
-            AttributeType: 'S'
-          - AttributeName: 'productName'
-            AttributeType: 'S'
-          - AttributeName: 'description'
-            AttributeType: 'S'
+    AttributeDefinitions:
+      - AttributeName: 'pk'
+        AttributeType: 'S'
+      - AttributeName: 'sk'
+        AttributeType: 'S'
+      - AttributeName: 'pkBrandPrice'
+        AttributeType: 'S'
+      - AttributeName: 'skBrandPrice'
+        AttributeType: 'S'
+      - AttributeName: 'pkCategoryBrandPrice'
+        AttributeType: 'S'
+      - AttributeName: 'skCategoryBrandPrice'
+        AttributeType: 'S'
+      - AttributeName: 'pkProduct'
+        AttributeType: 'S'
+      - AttributeName: 'skProduct'
+        AttributeType: 'S'
+      - AttributeName: 'stock'
+        AttributeType: 'N'
+      - AttributeName: 'price'
+        AttributeType: 'N'
 
+    KeySchema:
+      - AttributeName: 'pk'
+        KeyType: 'HASH'
+      - AttributeName: 'sk'
+        KeyType: 'RANGE'
+
+    GlobalSecondaryIndexes:
+      - IndexName: 'brandPriceIndex'
         KeySchema:
-          - AttributeName: 'pk'
+          - AttributeName: 'pkBrandPrice'
             KeyType: 'HASH'
-          - AttributeName: 'sk'
+          - AttributeName: 'skBrandPrice'
             KeyType: 'RANGE'
-
-        GlobalSecondaryIndexes:
-          - IndexName: 'categoryIndex'
-            KeySchema:
-              - AttributeName: 'gsi1pk'
-                KeyType: 'HASH'
-              - AttributeName: 'gsi1sk'
-                KeyType: 'RANGE'
-            Projection:
-              ProjectionType: 'INCLUDE'
-              NonKeyAttributes:
-                - 'sk'
-                - 'brand'
-                - 'price'
-                - 'stock'
-            ProvisionedThroughput:
-              ReadCapacityUnits: 2
-              WriteCapacityUnits: 1
-
-          - IndexName: 'brandIndex'
-            KeySchema:
-              - AttributeName: 'gsi2pk'
-                KeyType: 'HASH'
-              - AttributeName: 'gsi2sk'
-                KeyType: 'RANGE'
-            Projection:
-              ProjectionType: 'INCLUDE'
-              NonKeyAttributes:
-                - 'sk'
-                - 'category'
-                - 'price'
-                - 'stock'
-            ProvisionedThroughput:
-              ReadCapacityUnits: 2
-              WriteCapacityUnits: 1
-
-          - IndexName: 'priceIndex'
-            KeySchema:
-              - AttributeName: 'gsi3pk'
-                KeyType: 'HASH'
-              - AttributeName: 'gsi3sk'
-                KeyType: 'RANGE'
-            Projection:
-              ProjectionType: 'INCLUDE'
-              NonKeyAttributes:
-                - 'pk'
-                - 'sk'
-                - 'category'
-                - 'brand'
-                - 'stock'
-            ProvisionedThroughput:
-              ReadCapacityUnits: 2
-              WriteCapacityUnits: 1
-
-
+        Projection:
+          ProjectionType: 'INCLUDE'
+          NonKeyAttributes:
+            - 'price'
+      - IndexName: 'categoryBrandPriceIndex'
+        KeySchema:
+          - AttributeName: 'pkCategoryBrandPrice'
+            KeyType: 'HASH'
+          - AttributeName: 'skCategoryBrandPrice'
+            KeyType: 'RANGE'
+        Projection:
+          ProjectionType: 'ALL'
+      - IndexName: 'productIndex'
+        KeySchema:
+          - AttributeName: 'pkProduct'
+            KeyType: 'HASH'
+          - AttributeName: 'skProduct'
+            KeyType: 'RANGE'
+        Projection:
+          ProjectionType: 'INCLUDE'
+          NonKeyAttributes:
+            - 'stock'
+      - IndexName: 'categoryPriceIndex'
+        KeySchema:
+          - AttributeName: 'pkCategoryPrice'
+            KeyType: 'HASH'
+          - AttributeName: 'price'
+            KeyType: 'RANGE'
+        Projection:
+          ProjectionType: 'ALL'
 functions:
   create:
     handler: handler.create
