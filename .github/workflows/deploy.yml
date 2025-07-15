@@ -5,7 +5,7 @@ on:
     branches:
       - main
   pull_request:
-    types: [opened, synchronize, reopened, edited]
+    types: [opened, synchronize, reopened]
     branches:
       - dev*
 
@@ -14,7 +14,7 @@ jobs:
     name: deploy
     runs-on: ubuntu-latest
     environment:
-      name: ${{ job.environment }}
+      name: ${{ matrix.environment }}
 
     steps:
       - name: checkout code
@@ -36,9 +36,9 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: deploy with serverless to ${{ job.environment }}
-        if: success() && ${{ job.environment }}
-        run: npx serverless deploy --stage ${{ job.environment }}
+      - name: deploy with serverless to ${{ matrix.environment }}
+        if: success() && ${{ matrix.environment }}
+        run: npx serverless deploy --stage ${{ matrix.environment }}
         env:
-          NODE_ENV: ${{ job.environment }}
+          NODE_ENV: ${{ matrix.environment }}
           SERVERLESS_ACCESS_KEY: ${{ secrets.SERVERLESS_ACCESS_KEY }}
