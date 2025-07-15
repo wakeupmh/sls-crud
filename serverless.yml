@@ -12,14 +12,6 @@ plugins:
   - serverless-plugin-log-retention
   - serverless-iam-roles-per-function
 
-stages:
-  dev:
-    params:
-      tableName: 'grocery-store-${sls:stage}'
-  prod:
-    params:
-      tableName: 'grocery-store-${sls:stage}'
-
 provider:
   name: aws
   runtime: nodejs20.x
@@ -40,6 +32,8 @@ provider:
           Resource:
             - 'arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${sls:stageParams.tableName}'
             - 'arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${sls:stageParams.tableName}/index/*'
+  environment:
+    TABLE_NAME: ${self:service}-${sls:stage}
 
 resources:
   Resources:

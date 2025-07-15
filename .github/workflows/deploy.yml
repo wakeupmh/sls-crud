@@ -5,19 +5,20 @@ on:
     branches:
       - main
   pull_request:
+    types: [opened, synchronize, reopened]
     branches:
-      - feat/*
-      - fix/*
-      - refactor/*
+      - dev
 
 jobs:
   deploy:
     name: deploy
     runs-on: ubuntu-latest
     environment:
-      name: ${{ github.ref_name == 'main' && 'production' || 'development' }}
-
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'dev' }}
     steps:
+      - name: set environment
+        run: echo "ENVIRONMENT_NAME=${{ github.ref == 'refs/heads/main' && 'production' || 'dev' }}" >> $GITHUB_ENV
+
       - name: checkout code
         uses: actions/checkout@v4
 
@@ -37,23 +38,9 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: determine stage
-        id: determine_stage
-        run: |
-          if [[ '${{ github.ref_name }}' == 'main' ]]; then
-            echo 'STAGE=prod' >> $GITHUB_ENV
-            echo 'Deploying to production stage.'
-          elif [[ '${{ github.ref_name }}' == 'feat'* ]]; then
-            echo 'STAGE=dev' >> $GITHUB_ENV
-            echo 'Deploying to development stage.'
-          else
-            echo 'no deployment stage defined for branch ${{ github.ref_name }}. exiting.'
-            exit 1
-          fi
-
-      - name: deploy with serverless to ${{ env.STAGE }}
-        if: success() && env.STAGE
-        run: npx serverless deploy --stage ${{ env.STAGE }}
+      - name: deploy with serverless
+        if: success() && ${{ env.ENVIRONMENT_NAME }}
+        run: npx serverless deploy --stage${{ env.ENVIRONMENT_NAME }}
         env:
-          NODE_ENV: production
+          NODE_ENV: ${{ env.ENVIRONMENT_NAME }}
           SERVERLESS_ACCESS_KEY: ${{ secrets.SERVERLESS_ACCESS_KEY }}
