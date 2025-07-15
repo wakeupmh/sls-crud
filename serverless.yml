@@ -68,20 +68,6 @@ resources:
           KeyType: 'HASH'
         - AttributeName: 'sk'
           KeyType: 'RANGE'
-        - AttributeName: 'pkBrandPrice'
-          KeyType: 'HASH'
-        - AttributeName: 'skBrandPrice'
-          KeyType: 'RANGE'
-        - AttributeName: 'pkCategoryBrandPrice'
-          KeyType: 'HASH'
-        - AttributeName: 'skCategoryBrandPrice'
-          KeyType: 'RANGE'
-        - AttributeName: 'pkProduct'
-          KeyType: 'HASH'
-        - AttributeName: 'pkCategoryPrice'
-          KeyType: 'HASH'
-        - AttributeName: 'price'
-          KeyType: 'RANGE'
 
       GlobalSecondaryIndexes:
         - IndexName: 'brandPriceIndex'
@@ -91,9 +77,7 @@ resources:
             - AttributeName: 'skBrandPrice'
               KeyType: 'RANGE'
           Projection:
-            ProjectionType: 'INCLUDE'
-            NonKeyAttributes:
-              - 'price'
+            ProjectionType: 'KEYS_ONLY'
         - IndexName: 'categoryBrandPriceIndex'
           KeySchema:
             - AttributeName: 'pkCategoryBrandPrice'
@@ -101,15 +85,13 @@ resources:
             - AttributeName: 'skCategoryBrandPrice'
               KeyType: 'RANGE'
           Projection:
-            ProjectionType: 'ALL'
+            ProjectionType: 'KEYS_ONLY'
         - IndexName: 'productIndex'
           KeySchema:
             - AttributeName: 'pkProduct'
               KeyType: 'HASH'
           Projection:
-            ProjectionType: 'INCLUDE'
-            NonKeyAttributes:
-              - 'stock'
+            ProjectionType: 'KEYS_ONLY'
         - IndexName: 'categoryPriceIndex'
           KeySchema:
             - AttributeName: 'pkCategoryPrice'
@@ -117,7 +99,7 @@ resources:
             - AttributeName: 'price'
               KeyType: 'RANGE'
           Projection:
-            ProjectionType: 'ALL'
+            ProjectionType: 'KEYS_ONLY'
 
 functions:
   create:
