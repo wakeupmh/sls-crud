@@ -4,3 +4,6 @@ pre-commit:
     format:
       glob: "*.{js,ts,jsx,tsx}"
       run: npx @biomejs/biome check --write {staged_files} && git add {staged_files}
+    coverage:
+      glob: '**/*.test.ts'
+      run: npm run test:coverage -- --passWithNoTests {staged_files} && git add .

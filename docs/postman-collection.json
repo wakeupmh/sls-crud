@@ -1,0 +1,757 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "Serverless Grocery Store Catalog API",
+    "description": "Complete API collection for testing the Serverless Product Catalog endpoints. This collection includes all CRUD operations and advanced querying capabilities.\n\n## Environment Variables\nMake sure to set up the following environment variables:\n- `base_url`: Your API Gateway base URL (e.g., https://api-id.execute-api.region.amazonaws.com/stage)\n- `test_sku`: A test SKU for operations (e.g., TEST-001)\n\n## Test Data\nThe collection includes sample products for Electronics, Clothing, and Books categories with various brands and price ranges.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "Create Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has product data\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('sku');",
+                  "    pm.expect(jsonData).to.have.property('productName');",
+                  "    pm.expect(jsonData).to.have.property('price');",
+                  "    pm.expect(jsonData).to.have.property('stock');",
+                  "});",
+                  "",
+                  "pm.test(\"Product data matches request\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const requestData = JSON.parse(pm.request.body.raw);",
+                  "    pm.expect(jsonData.sku).to.eql(requestData.sku);",
+                  "    pm.expect(jsonData.productName).to.eql(requestData.productName);",
+                  "    pm.expect(jsonData.price).to.eql(requestData.price);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sku\": \"{{test_sku}}\",\n  \"productName\": \"MacBook Pro 16-inch\",\n  \"category\": \"Electronics\",\n  \"brand\": \"Apple\",\n  \"price\": 2499.99,\n  \"stock\": 25,\n  \"description\": \"16-inch MacBook Pro with M2 Pro chip, 16GB RAM, 512GB SSD\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/products/create",
+              "host": ["{{base_url}}"],
+              "path": ["products", "create"]
+            },
+            "description": "Creates a new product in the catalog. All fields except description are required."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Product by SKU",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has product data\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('sku');",
+                  "    pm.expect(jsonData).to.have.property('productName');",
+                  "    pm.expect(jsonData).to.have.property('price');",
+                  "    pm.expect(jsonData).to.have.property('stock');",
+                  "    pm.expect(jsonData).to.have.property('category');",
+                  "    pm.expect(jsonData).to.have.property('brand');",
+                  "});",
+                  "",
+                  "pm.test(\"SKU matches request\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.sku).to.eql(pm.variables.get('test_sku'));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/products/get/{{test_sku}}",
+              "host": ["{{base_url}}"],
+              "path": ["products", "get", "{{test_sku}}"]
+            },
+            "description": "Retrieves a single product by its SKU. Returns 404 if product not found."
+          },
+          "response": []
+        },
+        {
+          "name": "List All Products",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has products array\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('products');",
+                  "    pm.expect(jsonData.products).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test(\"Products have required fields\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.products.length > 0) {",
+                  "        const product = jsonData.products[0];",
+                  "        pm.expect(product).to.have.property('sku');",
+                  "        pm.expect(product).to.have.property('productName');",
+                  "        pm.expect(product).to.have.property('price');",
+                  "        pm.expect(product).to.have.property('stock');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/products/get",
+              "host": ["{{base_url}}"],
+              "path": ["products", "get"]
+            },
+            "description": "Lists all products without any filters. Returns paginated results with default page size of 20."
+          },
+          "response": []
+        },
+        {
+          "name": "Filter by Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"All products match category filter\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.products.length > 0) {",
+                  "        jsonData.products.forEach(product => {",
+                  "            pm.expect(product.category).to.eql('Electronics');",
+                  "        });",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/products/get?category=Electronics",
+              "host": ["{{base_url}}"],
+              "path": ["products", "get"],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "Electronics"
+                }
+              ]
+            },
+            "description": "Filters products by category. Uses the categoryBrandPriceIndex GSI for efficient querying."
+          },
+          "response": []
+        },
+        {
+          "name": "Filter by Brand",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"All products match brand filter\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.products.length > 0) {",
+                  "        jsonData.products.forEach(product => {",
+                  "            pm.expect(product.brand).to.eql('Apple');",
+                  "        });",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/products/get?brand=Apple",
+              "host": ["{{base_url}}"],
+              "path": ["products", "get"],
+              "query": [
+                {
+                  "key": "brand",
+                  "value": "Apple"
+                }
+              ]
+            },
+            "description": "Filters products by brand. Uses the brandPriceIndex GSI for efficient querying."
+          },
+          "response": []
+        },
+        {
+          "name": "Filter by Price Range",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"All products within price range\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.products.length > 0) {",
+                  "        jsonData.products.forEach(product => {",
+                  "            pm.expect(product.price).to.be.at.least(1000);",
+                  "            pm.expect(product.price).to.be.at.most(3000);",
+                  "        });",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/products/get?minPrice=1000&maxPrice=3000",
+              "host": ["{{base_url}}"],
+              "path": ["products", "get"],
+              "query": [
+                {
+                  "key": "minPrice",
+                  "value": "1000"
+                },
+                {
+                  "key": "maxPrice",
+                  "value": "3000"
+                }
+              ]
+            },
+            "description": "Filters products by price range. Requires at least one other filter (category, brand, or productName) for efficient querying."
+          },
+          "response": []
+        },
+        {
+          "name": "Complex Filter with Sorting",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Products are sorted by price ascending\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.products.length > 1) {",
+                  "        for (let i = 1; i < jsonData.products.length; i++) {",
+                  "            pm.expect(jsonData.products[i].price).to.be.at.least(jsonData.products[i-1].price);",
+                  "        }",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test(\"All products match filters\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.products.length > 0) {",
+                  "        jsonData.products.forEach(product => {",
+                  "            pm.expect(product.category).to.eql('Electronics');",
+                  "            pm.expect(product.brand).to.eql('Apple');",
+                  "            pm.expect(product.price).to.be.at.least(1000);",
+                  "            pm.expect(product.price).to.be.at.most(3000);",
+                  "        });",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/products/get?category=Electronics&brand=Apple&minPrice=1000&maxPrice=3000&orderBy=price&orderDirection=ASC&page=1&pageSize=10",
+              "host": ["{{base_url}}"],
+              "path": ["products", "get"],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "Electronics"
+                },
+                {
+                  "key": "brand",
+                  "value": "Apple"
+                },
+                {
+                  "key": "minPrice",
+                  "value": "1000"
+                },
+                {
+                  "key": "maxPrice",
+                  "value": "3000"
+                },
+                {
+                  "key": "orderBy",
+                  "value": "price"
+                },
+                {
+                  "key": "orderDirection",
+                  "value": "ASC"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Demonstrates complex filtering with multiple criteria, sorting, and pagination. Uses the categoryBrandPriceIndex GSI for optimal performance."
+          },
+          "response": []
+        },
+        {
+          "name": "Search by Product Name",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Products match name search\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.products.length > 0) {",
+                  "        jsonData.products.forEach(product => {",
+                  "            pm.expect(product.productName).to.include('MacBook');",
+                  "        });",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/products/get?productName=MacBook Pro 16-inch",
+              "host": ["{{base_url}}"],
+              "path": ["products", "get"],
+              "query": [
+                {
+                  "key": "productName",
+                  "value": "MacBook Pro 16-inch"
+                }
+              ]
+            },
+            "description": "Searches for products by exact product name match. Uses the productIndex GSI for efficient querying."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has updated product data\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('sku');",
+                  "    pm.expect(jsonData).to.have.property('price');",
+                  "    pm.expect(jsonData).to.have.property('stock');",
+                  "});",
+                  "",
+                  "pm.test(\"Product data is updated\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    const requestData = JSON.parse(pm.request.body.raw);",
+                  "    pm.expect(jsonData.price).to.eql(requestData.price);",
+                  "    pm.expect(jsonData.stock).to.eql(requestData.stock);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sku\": \"{{test_sku}}\",\n  \"price\": 2299.99,\n  \"stock\": 20,\n  \"description\": \"Updated: 16-inch MacBook Pro with M2 Pro chip, 16GB RAM, 512GB SSD - Special Price!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/products/update",
+              "host": ["{{base_url}}"],
+              "path": ["products", "update"]
+            },
+            "description": "Updates an existing product. Supports partial updates - only include fields that need to be changed. SKU is required to identify the product."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 or 204\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sku\": \"{{test_sku}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/products/delete",
+              "host": ["{{base_url}}"],
+              "path": ["products", "delete"]
+            },
+            "description": "Deletes a product from the catalog. Requires the SKU of the product to delete."
+          },
+          "response": []
+        }
+      ],
+      "description": "Complete set of product catalog operations including CRUD operations and advanced querying capabilities."
+    },
+    {
+      "name": "Test Data Setup",
+      "item": [
+        {
+          "name": "Create Sample Electronics",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sku\": \"IPHONE-15-PRO\",\n  \"productName\": \"iPhone 15 Pro\",\n  \"category\": \"Electronics\",\n  \"brand\": \"Apple\",\n  \"price\": 999.99,\n  \"stock\": 50,\n  \"description\": \"iPhone 15 Pro with A17 Pro chip, 128GB storage\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/products/create",
+              "host": ["{{base_url}}"],
+              "path": ["products", "create"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Sample Laptop",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sku\": \"DELL-XPS-13\",\n  \"productName\": \"Dell XPS 13\",\n  \"category\": \"Electronics\",\n  \"brand\": \"Dell\",\n  \"price\": 1299.99,\n  \"stock\": 15,\n  \"description\": \"Dell XPS 13 laptop with Intel i7, 16GB RAM, 512GB SSD\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/products/create",
+              "host": ["{{base_url}}"],
+              "path": ["products", "create"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Sample Clothing",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sku\": \"NIKE-AIR-MAX\",\n  \"productName\": \"Nike Air Max 90\",\n  \"category\": \"Clothing\",\n  \"brand\": \"Nike\",\n  \"price\": 120.00,\n  \"stock\": 100,\n  \"description\": \"Classic Nike Air Max 90 sneakers in white/black colorway\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/products/create",
+              "host": ["{{base_url}}"],
+              "path": ["products", "create"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Sample Book",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sku\": \"BOOK-AWS-ARCH\",\n  \"productName\": \"AWS Architecture Patterns\",\n  \"category\": \"Books\",\n  \"brand\": \"O'Reilly\",\n  \"price\": 49.99,\n  \"stock\": 25,\n  \"description\": \"Comprehensive guide to AWS architecture patterns and best practices\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/products/create",
+              "host": ["{{base_url}}"],
+              "path": ["products", "create"]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Sample requests to create test data for demonstrating the API functionality. Run these first to populate your catalog with test products."
+    },
+    {
+      "name": "Error Scenarios",
+      "item": [
+        {
+          "name": "Get Non-existent Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/products/get/NON-EXISTENT-SKU",
+              "host": ["{{base_url}}"],
+              "path": ["products", "get", "NON-EXISTENT-SKU"]
+            },
+            "description": "Tests error handling when requesting a product that doesn't exist."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Product with Duplicate SKU",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400 or 409\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([400, 409]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sku\": \"{{test_sku}}\",\n  \"productName\": \"Duplicate Product\",\n  \"category\": \"Electronics\",\n  \"brand\": \"TestBrand\",\n  \"price\": 99.99,\n  \"stock\": 10,\n  \"description\": \"This should fail due to duplicate SKU\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/products/create",
+              "host": ["{{base_url}}"],
+              "path": ["products", "create"]
+            },
+            "description": "Tests error handling when trying to create a product with an existing SKU."
+          },
+          "response": []
+        },
+        {
+          "name": "Invalid Filter Query",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/products/get?minPrice=100&maxPrice=50",
+              "host": ["{{base_url}}"],
+              "path": ["products", "get"],
+              "query": [
+                {
+                  "key": "minPrice",
+                  "value": "100"
+                },
+                {
+                  "key": "maxPrice",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Tests error handling for invalid query parameters (price range filters without required category/brand/productName filter)."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Non-existent Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sku\": \"NON-EXISTENT-SKU\",\n  \"price\": 99.99\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/products/update",
+              "host": ["{{base_url}}"],
+              "path": ["products", "update"]
+            },
+            "description": "Tests error handling when trying to update a product that doesn't exist."
+          },
+          "response": []
+        }
+      ],
+      "description": "Test cases for various error scenarios to validate proper error handling and HTTP status codes."
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Set default test SKU if not already set",
+          "if (!pm.variables.get('test_sku')) {",
+          "    pm.variables.set('test_sku', 'TEST-' + Math.random().toString(36).substr(2, 9).toUpperCase());",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://your-api-id.execute-api.us-east-1.amazonaws.com/dev",
+      "description": "Base URL for your API Gateway endpoint"
+    },
+    {
+      "key": "test_sku",
+      "value": "TEST-001",
+      "description": "Test SKU used for CRUD operations"
+    }
+  ]
+}

@@ -64,8 +64,6 @@ resources:
         AttributeType: 'S'
       - AttributeName: 'pkProduct'
         AttributeType: 'S'
-      - AttributeName: 'skProduct'
-        AttributeType: 'S'
       - AttributeName: 'stock'
         AttributeType: 'N'
       - AttributeName: 'price'
@@ -100,8 +98,6 @@ resources:
         KeySchema:
           - AttributeName: 'pkProduct'
             KeyType: 'HASH'
-          - AttributeName: 'skProduct'
-            KeyType: 'RANGE'
         Projection:
           ProjectionType: 'INCLUDE'
           NonKeyAttributes:
