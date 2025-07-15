@@ -40,7 +40,7 @@ jobs:
 
       - name: deploy with serverless
         if: success() && ${{ env.ENVIRONMENT_NAME }}
-        run: npx serverless deploy --stage${{ env.ENVIRONMENT_NAME }}
+        run: npx serverless deploy --stage ${{ env.ENVIRONMENT_NAME }}
         env:
           NODE_ENV: ${{ env.ENVIRONMENT_NAME }}
           SERVERLESS_ACCESS_KEY: ${{ secrets.SERVERLESS_ACCESS_KEY }}
