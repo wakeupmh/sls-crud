@@ -11,12 +11,12 @@ So, I created a serverless system for him. this means Mr. Zé doesn't have to wo
 
 ### Requirements Fulfilled
 
-**CRUD Operations**: Complete Create, Read, Update, Delete functionality
-**Advanced Querying**: Multi-dimensional filtering, sorting, and pagination
-**Serverless Architecture**: AWS Lambda + API Gateway + DynamoDB
-**Type Safety**: Full TypeScript implementation
-**Testing**: Comprehensive test suite with 75% function coverage
-**Production Ready**: Error handling, logging, and monitoring
+- **CRUD Operations**: Complete Create, Read, Update, Delete functionality
+- **Advanced Querying**: Multi-dimensional filtering, sorting, and pagination
+- **Serverless Architecture**: AWS Lambda + API Gateway + DynamoDB
+- **Type Safety**: Full TypeScript implementation
+- **Testing**: Comprehensive test suite with 75% function coverage
+- **Production Ready**: Error handling, logging, and monitoring
 
 ### Key Design Decisions
 
