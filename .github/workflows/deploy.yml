@@ -10,27 +10,16 @@ on:
       - dev
 
 jobs:
-  set-env-name:
-    name: set env name
-    runs-on: ubuntu-latest
-    outputs:
-      current_env: ${{ steps.set_env.outputs.current_env }}
-    steps:
-      - name: Set env name
-        id: current_env
-        run: |
-          echo "ENVIRONMENT_NAME=${{ github.ref == 'refs/heads/main' && 'production' || 'dev' }}" >> $GITHUB_ENV
-      - name: Set output
-        id: set_env
-        run: echo "current_env={{ env.ENVIRONMENT_NAME }} >> $GITHUB_OUTPUT"
-
   deploy:
     name: deploy
     runs-on: ubuntu-latest
     needs: set-env-name
     environment:
-      name: ${{ needs.set-env-name.outputs.current_env }}
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'dev' }}
     steps:
+      - name: set environment
+        run: echo "ENVIRONMENT_NAME=${{ github.ref == 'refs/heads/main' && 'production' || 'dev' }}" >> $GITHUB_ENV
+
       - name: checkout code
         uses: actions/checkout@v4
 
@@ -43,16 +32,16 @@ jobs:
       - name: install dependencies
         run: npm ci
 
-      - name: configure aws credentials for ${{ env.ENVIRONMENT_NAME }}
+      - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: deploy with serverless to ${{ env.ENVIRONMENT_NAME }}
-        if: success() && ${{ needs.set-environment.outputs.current_env }}
-        run: npx serverless deploy --stage ${{ needs.set-environment.outputs.current_env }}
+      - name: deploy with serverless
+        if: success() && ${{ env.ENVIRONMENT_NAME }}
+        run: npx serverless deploy --stage${{ env.ENVIRONMENT_NAME }}
         env:
-          NODE_ENV: ${{ needs.set-environment.outputs.current_env }}
+          NODE_ENV: ${{ env.ENVIRONMENT_NAME }}
           SERVERLESS_ACCESS_KEY: ${{ secrets.SERVERLESS_ACCESS_KEY }}
