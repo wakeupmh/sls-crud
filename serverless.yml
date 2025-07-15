@@ -40,7 +40,7 @@ resources:
    DynamoDBTable:
     Type: 'AWS::DynamoDB::Table'
     Properties:
-      TableName: '${sls:stageParams.tableName}'
+      TableName: '${self:service}-${sls:stage}'
       BillingMode: PAY_PER_REQUEST
 
     AttributeDefinitions:
