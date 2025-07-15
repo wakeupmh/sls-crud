@@ -15,7 +15,7 @@ jobs:
     name: deploy
     runs-on: ubuntu-latest
     environment:
-      name: ${{ github.ref_name == 'main' && 'production' || 'development' }}
+      name: ${{ github.ref_name == 'main' && 'production' || 'dev' }}
 
     steps:
       - name: checkout code
