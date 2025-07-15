@@ -11,10 +11,13 @@ on:
 
 jobs:
   deploy:
+    strategy:
+      matrix:
+        environment: [dev, production]
     name: deploy
     runs-on: ubuntu-latest
     environment:
-      name: ${{ inputs.environment}}
+      name: ${{ matrix.environment}}
 
     steps:
       - name: checkout code
@@ -29,16 +32,16 @@ jobs:
       - name: install dependencies
         run: npm ci
 
-      - name: configure aws credentials for ${{ inputs.environment}}
+      - name: configure aws credentials for ${{ matrix.environment}}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: deploy with serverless to ${{ inputs.environment}}
-        if: success() && ${{ inputs.environment}}
-        run: npx serverless deploy --stage ${{ inputs.environment}}
+      - name: deploy with serverless to ${{ matrix.environment}}
+        if: success() && ${{ matrix.environment}}
+        run: npx serverless deploy --stage ${{ matrix.environment}}
         env:
-          NODE_ENV: ${{ inputs.environment}}
+          NODE_ENV: ${{ matrix.environment}}
           SERVERLESS_ACCESS_KEY: ${{ secrets.SERVERLESS_ACCESS_KEY }}
