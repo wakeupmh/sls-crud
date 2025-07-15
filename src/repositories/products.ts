@@ -1,10 +1,11 @@
-import type { AttributeValue } from "@aws-sdk/client-dynamodb";
-import { DynamoDBClient, QueryCommand } from "@aws-sdk/client-dynamodb";
+import { BatchGetItemCommand, DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
   DeleteCommand,
   DynamoDBDocumentClient,
   GetCommand,
   PutCommand,
+  QueryCommand,
+  UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
 import type { PresentationProduct, Product } from "../domain/products";
 import type LoggerProvider from "../providers/logging/logger";
@@ -47,6 +48,39 @@ export default class ProductsRepository {
     await this.docClient.send(new PutCommand(params));
   }
 
+  async update(product: Partial<Product> & { pk: string }): Promise<void> {
+    const updateExpressions: string[] = [];
+    const expressionAttributeNames: Record<string, string> = {};
+    const expressionAttributeValues: Record<string, any> = {};
+
+    Object.entries(product).forEach(([key, value]) => {
+      if (key !== "pk" && value) {
+        updateExpressions.push(`#${key} = :${key}`);
+        expressionAttributeNames[`#${key}`] = key;
+        expressionAttributeValues[`:${key}`] = value;
+      }
+    });
+
+    if (updateExpressions.length === 0) {
+      this.logger.warn("No attributes to update for product");
+      return;
+    }
+
+    const params = {
+      TableName: this.tableName,
+      Key: {
+        pk: product.pk,
+      },
+      UpdateExpression: `SET ${updateExpressions.join(", ")}`,
+      ExpressionAttributeNames: expressionAttributeNames,
+      ExpressionAttributeValues: expressionAttributeValues,
+      ConditionExpression: "attribute_exists(pk)",
+    };
+
+    this.logger.debug("Updating product: ", params);
+    await this.docClient.send(new UpdateCommand(params));
+  }
+
   async delete(pk: string): Promise<void> {
     const params = {
       TableName: this.tableName,
@@ -82,68 +116,129 @@ export default class ProductsRepository {
     orderDirection?: "ASC" | "DESC";
     page?: number;
     pageSize?: number;
-  }): Promise<PresentationProduct[]> {
-    let products: PresentationProduct[] = [];
-    const queryPromises: Promise<PresentationProduct[]>[] = [];
+    lastEvaluatedKey?: Record<string, any>;
+  }): Promise<{
+    products: PresentationProduct[];
+    lastEvaluatedKey?: Record<string, any>;
+  }> {
+    let productKeys: string[] = [];
+    const queryPromises: Array<{
+      promise: Promise<string[]>;
+      queryType: string;
+      params: any;
+    }> = [];
 
     if (filters.productName) {
-      queryPromises.push(
-        this.productNameIndexQuery({
+      queryPromises.push({
+        promise: this.productNameIndexQuery({
           productName: filters.productName,
         }),
-      );
-    }
-    if (
+        queryType: "productNameIndex",
+        params: { productName: filters.productName },
+      });
+    } else if (
       filters.category &&
       filters.brand &&
       (filters.minPrice || filters.maxPrice)
     ) {
-      queryPromises.push(
-        this.categoryBrandPriceIndexQuery({
+      queryPromises.push({
+        promise: this.categoryBrandPriceIndexQuery({
           category: filters.category,
           brand: filters.brand,
           minPrice: filters.minPrice,
           maxPrice: filters.maxPrice,
         }),
-      );
+        queryType: "categoryBrandPriceIndex",
+        params: {
+          category: filters.category,
+          brand: filters.brand,
+          minPrice: filters.minPrice,
+          maxPrice: filters.maxPrice,
+        },
+      });
     } else if (filters.category && (filters.minPrice || filters.maxPrice)) {
-      queryPromises.push(
-        this.categoryPriceIndexQuery({
+      queryPromises.push({
+        promise: this.categoryPriceIndexQuery({
           category: filters.category,
           minPrice: filters.minPrice,
           maxPrice: filters.maxPrice,
         }),
-      );
+        queryType: "categoryPriceIndex",
+        params: {
+          category: filters.category,
+          minPrice: filters.minPrice,
+          maxPrice: filters.maxPrice,
+        },
+      });
     } else if (filters.brand && (filters.minPrice || filters.maxPrice)) {
-      queryPromises.push(
-        this.brandPriceIndexQuery({
+      queryPromises.push({
+        promise: this.brandPriceIndexQuery({
           brand: filters.brand,
           minPrice: filters.minPrice,
           maxPrice: filters.maxPrice,
         }),
-      );
+        queryType: "brandPriceIndex",
+        params: {
+          brand: filters.brand,
+          minPrice: filters.minPrice,
+          maxPrice: filters.maxPrice,
+        },
+      });
+    } else if (filters.category) {
+      queryPromises.push({
+        promise: this.categoryPriceIndexQuery({
+          category: filters.category,
+        }),
+        queryType: "categoryPriceIndex",
+        params: { category: filters.category },
+      });
+    } else if (filters.brand) {
+      queryPromises.push({
+        promise: this.brandPriceIndexQuery({
+          brand: filters.brand,
+        }),
+        queryType: "brandPriceIndex",
+        params: { brand: filters.brand },
+      });
     } else {
       throw new SystemException(
-        "At least one specific filter criterion (category, brand, productName, or category/brand with price) must be provided for efficient queries.",
+        "At least one filter criterion (category, brand, or productName) must be provided for efficient queries.",
       );
     }
 
-    const results = await Promise.allSettled(queryPromises);
+    const results = await Promise.allSettled(
+      queryPromises.map((q) => q.promise),
+    );
 
-    const allProducts: PresentationProduct[] = [];
-    for (const result of results) {
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i];
+      const queryInfo = queryPromises[i];
+
       if (result.status === "fulfilled") {
-        allProducts.push(...result.value);
+        productKeys = [...productKeys, ...result.value];
+        this.logger.debug(`GSI query ${queryInfo.queryType} succeeded`, {
+          queryType: queryInfo.queryType,
+          params: queryInfo.params,
+          resultCount: result.value.length,
+        });
       } else {
-        this.logger.error("A GSI query failed:", result.reason);
+        this.logger.error(`GSI query ${queryInfo.queryType} failed`, {
+          queryType: queryInfo.queryType,
+          params: queryInfo.params,
+          error: result.reason?.message || result.reason,
+          errorType: result.reason?.constructor?.name || "Unknown",
+        });
       }
     }
 
-    const uniqueProductsMap = new Map<string, PresentationProduct>();
-    allProducts.forEach((product) => {
-      uniqueProductsMap.set(product.sku || "", product);
-    });
-    products = Array.from(uniqueProductsMap.values());
+    const uniqueKeys = Array.from(new Set(productKeys));
+
+    if (uniqueKeys.length === 0) {
+      this.logger.warn("No products found after GSI queries", { filters });
+      return { products: [] };
+    }
+
+    const products = await this.batchGetProducts(uniqueKeys);
 
     if (filters.orderBy) {
       products.sort((a: PresentationProduct, b: PresentationProduct) => {
@@ -170,7 +265,62 @@ export default class ProductsRepository {
     const startIndex = (page - 1) * pageSize;
     const endIndex = startIndex + pageSize;
 
-    return products.slice(startIndex, endIndex);
+    const paginatedProducts = products.slice(startIndex, endIndex);
+
+    let lastEvaluatedKey: any;
+    if (endIndex < products.length) {
+      const lastProduct = paginatedProducts[paginatedProducts.length - 1];
+      lastEvaluatedKey = { pk: lastProduct.sku };
+    }
+
+    return {
+      products: paginatedProducts,
+      lastEvaluatedKey,
+    };
+  }
+
+  private async batchGetProducts(
+    keys: string[],
+  ): Promise<PresentationProduct[]> {
+    if (keys.length === 0) {
+      return [];
+    }
+
+    const batchSize = 100;
+    const batches: string[][] = [];
+
+    for (let i = 0; i < keys.length; i += batchSize) {
+      batches.push(keys.slice(i, i + batchSize));
+    }
+
+    const batchPromises = batches.map(async (batchKeys) => {
+      const requestItems: Record<string, any> = {
+        [this.tableName]: {
+          Keys: batchKeys.map((key) => ({ pk: key })),
+        },
+      };
+
+      try {
+        const command = new BatchGetItemCommand({ RequestItems: requestItems });
+        const response = await this.docClient.send(command);
+
+        if (!response.Responses || !response.Responses[this.tableName]) {
+          return [];
+        }
+
+        return response.Responses[this.tableName].map((item) =>
+          this.convertToPresentation(item),
+        );
+      } catch (error: any) {
+        this.logger.error("Error in batch get products:", error);
+        throw new SystemException(
+          `Failed to batch get products: ${error.message}`,
+        );
+      }
+    });
+
+    const batchResults = await Promise.all(batchPromises);
+    return batchResults.flat();
   }
 
   private async categoryPriceIndexQuery({
@@ -181,55 +331,59 @@ export default class ProductsRepository {
     category: string;
     minPrice?: number;
     maxPrice?: number;
-  }) {
-    let condition = "pkCategoryPrice = :categoryValue";
-    const expressionAttributeValues: Record<string, AttributeValue> = {
-      ":categoryValue": {
-        S: category,
-      },
-    };
-
-    if (minPrice && maxPrice) {
-      condition += " AND price BETWEEN :minPrice AND :maxPrice";
-      expressionAttributeValues[":minPrice"] = {
-        N: minPrice.toString(),
-      };
-      expressionAttributeValues[":maxPrice"] = {
-        N: maxPrice.toString(),
-      };
-    }
-
-    if (minPrice && !maxPrice) {
-      condition += " AND price >= :minPrice";
-      expressionAttributeValues[":minPrice"] = {
-        N: minPrice.toString(),
-      };
-    }
-
-    if (!minPrice && maxPrice) {
-      condition += " AND price <= :maxPrice";
-      expressionAttributeValues[":maxPrice"] = {
-        N: maxPrice.toString(),
-      };
-    }
-
-    const categoryCommand = new QueryCommand({
-      TableName: this.tableName,
-      IndexName: "categoryPriceIndex",
-      KeyConditionExpression: condition,
-      ExpressionAttributeValues: expressionAttributeValues,
-      ProjectionExpression: "pk",
-    });
-
-    this.logger.debug("Querying CategoryPriceIndex", categoryCommand);
-
+  }): Promise<string[]> {
     try {
+      let condition = "pkCategoryBrandPrice = :categoryValue";
+      const expressionAttributeValues: Record<string, any> = {
+        ":categoryValue": category,
+      };
+
+      if (minPrice && maxPrice) {
+        condition +=
+          " AND skCategoryBrandPrice BETWEEN :minPrice AND :maxPrice";
+        expressionAttributeValues[":minPrice"] = `#${minPrice}`;
+        expressionAttributeValues[":maxPrice"] = `#${maxPrice}`;
+      } else if (minPrice && maxPrice === undefined) {
+        condition += " AND skCategoryBrandPrice >= :minPrice";
+        expressionAttributeValues[":minPrice"] = `#${minPrice}`;
+      } else if (minPrice === undefined && maxPrice) {
+        condition += " AND skCategoryBrandPrice <= :maxPrice";
+        expressionAttributeValues[":maxPrice"] = `#${maxPrice}`;
+      }
+
+      const categoryCommand = new QueryCommand({
+        TableName: this.tableName,
+        IndexName: "categoryBrandPriceIndex",
+        KeyConditionExpression: condition,
+        ExpressionAttributeValues: expressionAttributeValues,
+        ProjectionExpression: "pk",
+      });
+
+      this.logger.debug(
+        "Querying CategoryBrandPriceIndex for category filter",
+        {
+          condition,
+          category,
+          minPrice,
+          maxPrice,
+        },
+      );
+
       const result = await this.docClient.send(categoryCommand);
-      return (result.Items || []).map(this.mountProduct);
+      return (result.Items || []).map((item) => item.pk || "");
     } catch (error: any) {
-      this.logger.error("Error querying CategoryPriceIndex:", error);
+      this.logger.error(
+        "Error querying CategoryBrandPriceIndex for category filter",
+        {
+          category,
+          minPrice,
+          maxPrice,
+          error: error.message,
+          errorType: error.constructor?.name || "Unknown",
+        },
+      );
       throw new SystemException(
-        `Failed to query CategoryPriceIndex: ${error.message}`,
+        `Failed to query CategoryBrandPriceIndex for category filter: ${error.message}`,
       );
     }
   }
@@ -242,54 +396,53 @@ export default class ProductsRepository {
     brand: string;
     minPrice?: number;
     maxPrice?: number;
-  }) {
-    let condition = "brand = :brandValue";
-    const expressionAttributeValues: Record<string, AttributeValue> = {
-      ":brandValue": {
-        S: brand,
-      },
-    };
-
-    if (minPrice && maxPrice) {
-      condition += " AND price BETWEEN :minPrice AND :maxPrice";
-      expressionAttributeValues[":minPrice"] = {
-        N: minPrice.toString(),
-      };
-      expressionAttributeValues[":maxPrice"] = {
-        N: maxPrice.toString(),
-      };
-    }
-
-    if (minPrice && !maxPrice) {
-      condition += " AND price >= :minPrice";
-      expressionAttributeValues[":minPrice"] = {
-        N: minPrice.toString(),
-      };
-    }
-
-    if (!minPrice && maxPrice) {
-      condition += " AND price <= :maxPrice";
-      expressionAttributeValues[":maxPrice"] = {
-        N: maxPrice.toString(),
-      };
-    }
-
-    const brandCommand = new QueryCommand({
-      TableName: this.tableName,
-      IndexName: "brandIndex",
-      KeyConditionExpression: condition,
-      ExpressionAttributeValues: expressionAttributeValues,
-      ProjectionExpression: "pk",
-    });
-
-    this.logger.debug("Querying BrandIndex", brandCommand);
-
+  }): Promise<string[]> {
     try {
+      let condition = "pkBrandPrice = :brandValue";
+      const expressionAttributeValues: Record<string, any> = {
+        ":brandValue": brand,
+      };
+
+      if (minPrice && maxPrice) {
+        condition += " AND skBrandPrice BETWEEN :minPrice AND :maxPrice";
+        expressionAttributeValues[":minPrice"] = minPrice.toString();
+        expressionAttributeValues[":maxPrice"] = maxPrice.toString();
+      } else if (minPrice && maxPrice === undefined) {
+        condition += " AND skBrandPrice >= :minPrice";
+        expressionAttributeValues[":minPrice"] = minPrice.toString();
+      } else if (minPrice === undefined && maxPrice) {
+        condition += " AND skBrandPrice <= :maxPrice";
+        expressionAttributeValues[":maxPrice"] = maxPrice.toString();
+      }
+
+      const brandCommand = new QueryCommand({
+        TableName: this.tableName,
+        IndexName: "brandPriceIndex",
+        KeyConditionExpression: condition,
+        ExpressionAttributeValues: expressionAttributeValues,
+        ProjectionExpression: "pk",
+      });
+
+      this.logger.debug("Querying BrandPriceIndex", {
+        condition,
+        brand,
+        minPrice,
+        maxPrice,
+      });
+
       const result = await this.docClient.send(brandCommand);
-      return (result.Items || []).map(this.mountProduct);
+      return (result.Items || []).map((item) => item.pk || "");
     } catch (error: any) {
-      this.logger.error("Error querying BrandIndex:", error);
-      throw new SystemException(`Failed to query BrandIndex: ${error.message}`);
+      this.logger.error("Error querying BrandPriceIndex", {
+        brand,
+        minPrice,
+        maxPrice,
+        error: error.message,
+        errorType: error.constructor?.name || "Unknown",
+      });
+      throw new SystemException(
+        `Failed to query BrandPriceIndex: ${error.message}`,
+      );
     }
   }
 
@@ -297,32 +450,36 @@ export default class ProductsRepository {
     productName,
   }: {
     productName: string;
-  }) {
-    const condition = "productName = :productNameValue";
-    const expressionAttributeValues: Record<string, AttributeValue> = {
-      ":productNameValue": {
-        S: productName,
-      },
-    };
-
-    const productNameCommand = new QueryCommand({
-      TableName: this.tableName,
-      IndexName: "productNameIndex",
-      KeyConditionExpression: condition,
-      ExpressionAttributeValues: expressionAttributeValues,
-      ProjectionExpression: "pk",
-    });
-
-    this.logger.debug("Querying ProductNameIndex", productNameCommand);
-
+  }): Promise<string[]> {
     try {
+      const condition = "pkProduct = :productNameValue";
+      const expressionAttributeValues: Record<string, any> = {
+        ":productNameValue": productName,
+      };
+
+      const productNameCommand = new QueryCommand({
+        TableName: this.tableName,
+        IndexName: "productIndex",
+        KeyConditionExpression: condition,
+        ExpressionAttributeValues: expressionAttributeValues,
+        ProjectionExpression: "pk",
+      });
+
+      this.logger.debug("Querying ProductIndex", {
+        condition,
+        productName,
+      });
+
       const result = await this.docClient.send(productNameCommand);
-      const products = (result.Items || []).map(this.mountProduct);
-      return products;
+      return (result.Items || []).map((item) => item.pk || "");
     } catch (error: any) {
-      this.logger.error("Error querying ProductNameIndex:", error);
+      this.logger.error("Error querying ProductIndex", {
+        productName,
+        error: error.message,
+        errorType: error.constructor?.name || "Unknown",
+      });
       throw new SystemException(
-        `Failed to query ProductNameIndex: ${error.message}`,
+        `Failed to query ProductIndex: ${error.message}`,
       );
     }
   }
@@ -337,76 +494,71 @@ export default class ProductsRepository {
     brand: string;
     minPrice?: number;
     maxPrice?: number;
-  }) {
-    let condition = "pkCategoryBrandPrice = :categoryValue";
-    const expressionAttributeValues: Record<string, AttributeValue> = {
-      ":categoryValue": {
-        S: category,
-      },
-    };
-
-    if (minPrice && maxPrice && brand) {
-      condition +=
-        " AND skCategoryBrandPrice BETWEEN :brandMinPrice AND :brandMaxPrice";
-      expressionAttributeValues[":brandMinPrice"] = {
-        S: brand,
-      };
-      expressionAttributeValues[":brandMaxPrice"] = {
-        S: brand,
-      };
-    }
-
-    if (!minPrice && maxPrice && brand) {
-      condition += " AND skCategoryBrandPrice <= :brandMaxPrice";
-      expressionAttributeValues[":brandMaxPrice"] = {
-        S: brand,
-      };
-    }
-
-    if (minPrice && !maxPrice && brand) {
-      condition += " AND skCategoryBrandPrice >= :brandMinPrice";
-      expressionAttributeValues[":brandMinPrice"] = {
-        S: brand,
-      };
-    }
-
-    if (!minPrice && !maxPrice && brand) {
-      condition += " AND skCategoryBrandPrice = :brandValue";
-      expressionAttributeValues[":brandValue"] = {
-        S: brand,
-      };
-    }
-
-    this.logger.debug("Querying CategoryBrandPriceIndex", condition);
-
-    const categoryBrandPriceCommand = new QueryCommand({
-      TableName: this.tableName,
-      IndexName: "categoryBrandPriceIndex",
-      KeyConditionExpression: condition,
-      ExpressionAttributeValues: expressionAttributeValues,
-      ProjectionExpression: "pk",
-    });
-
+  }): Promise<string[]> {
     try {
+      let condition = "pkCategoryBrandPrice = :categoryValue";
+      const expressionAttributeValues: Record<string, any> = {
+        ":categoryValue": category,
+      };
+
+      if (minPrice && maxPrice) {
+        condition +=
+          " AND skCategoryBrandPrice BETWEEN :brandMinPrice AND :brandMaxPrice";
+        expressionAttributeValues[":brandMinPrice"] = `${brand}#${minPrice}`;
+        expressionAttributeValues[":brandMaxPrice"] = `${brand}#${maxPrice}`;
+      } else if (minPrice && maxPrice === undefined) {
+        condition += " AND skCategoryBrandPrice >= :brandMinPrice";
+        expressionAttributeValues[":brandMinPrice"] = `${brand}#${minPrice}`;
+      } else if (minPrice === undefined && maxPrice) {
+        condition += " AND skCategoryBrandPrice <= :brandMaxPrice";
+        expressionAttributeValues[":brandMaxPrice"] = `${brand}#${maxPrice}`;
+      } else {
+        condition += " AND begins_with(skCategoryBrandPrice, :brandPrefix)";
+        expressionAttributeValues[":brandPrefix"] = `${brand}#`;
+      }
+
+      this.logger.debug("Querying CategoryBrandPriceIndex", {
+        condition,
+        category,
+        brand,
+        minPrice,
+        maxPrice,
+      });
+
+      const categoryBrandPriceCommand = new QueryCommand({
+        TableName: this.tableName,
+        IndexName: "categoryBrandPriceIndex",
+        KeyConditionExpression: condition,
+        ExpressionAttributeValues: expressionAttributeValues,
+        ProjectionExpression: "pk",
+      });
+
       const result = await this.docClient.send(categoryBrandPriceCommand);
-      return (result.Items || []).map(this.mountProduct);
+      return (result.Items || []).map((item) => item.pk || "");
     } catch (error: any) {
-      this.logger.error("Error querying CategoryBrandPriceIndex:", error);
+      this.logger.error("Error querying CategoryBrandPriceIndex", {
+        category,
+        brand,
+        minPrice,
+        maxPrice,
+        error: error.message,
+        errorType: error.constructor?.name || "Unknown",
+      });
       throw new SystemException(
         `Failed to query CategoryBrandPriceIndex: ${error.message}`,
       );
     }
   }
 
-  private mountProduct(item: any): PresentationProduct {
+  private convertToPresentation(item: any): PresentationProduct {
     return {
-      sku: item.pk.S || "",
-      stock: Number(item.stock.N || 0),
-      price: Number(item.price.N || 0),
-      productName: item.productName.S || "",
-      category: item.category.S || "",
-      brand: item.brand.S || "",
-      description: item.description.S || "",
+      sku: item.pk || "",
+      stock: Number(item.stock || 0),
+      price: Number(item.price || 0),
+      productName: item.productName || "",
+      category: item.category || "",
+      brand: item.brand || "",
+      description: item.description || "",
     };
   }
 }

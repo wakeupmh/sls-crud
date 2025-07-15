@@ -6,7 +6,6 @@ export interface Product {
   pkCategoryBrandPrice: string;
   skCategoryBrandPrice: string;
   pkProduct: string;
-  skProduct: string;
   stock: number;
   price: number;
   productName: string;
@@ -26,5 +25,4 @@ export interface PresentationProduct
     | "pkCategoryBrandPrice"
     | "skCategoryBrandPrice"
     | "pkProduct"
-    | "skProduct"
   > {}

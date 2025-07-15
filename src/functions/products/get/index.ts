@@ -24,7 +24,7 @@ async function lambdaHandler(event: any, _: any) {
     meta: {
       page: request.page || 1,
       pageSize: request.pageSize || 10,
-      total: products.length,
+      total: products.products.length,
     },
   };
 }

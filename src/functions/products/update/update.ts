@@ -19,34 +19,61 @@ export default class UpdateProduct {
       if (!product) {
         throw new BadRequestException("Product not found");
       }
-
-      const updatedProduct = {
-        pk: `product#${productRequest.sku}` || product.pk,
-        sk: `product#${productRequest.sku}` || product.sk,
-        sku: productRequest.sku || product.sku,
-        pkBrandPrice:
-          `brand#${productRequest.brand}#price#${productRequest.price}` ||
-          product.pkBrandPrice,
-        skBrandPrice: `price#${productRequest.price}` || product.skBrandPrice,
-        pkCategoryBrandPrice:
-          `category#${productRequest.category}#brand#${productRequest.brand}#price#${productRequest.price}` ||
-          product.pkCategoryBrandPrice,
-        skCategoryBrandPrice:
-          `brand#${productRequest.brand}#price#${productRequest.price}` ||
-          product.skCategoryBrandPrice,
-        pkProduct: `type#${productRequest.productName}` || product.pkProduct,
-        skProduct:
-          `productName#${productRequest.productName}` || product.skProduct,
-        stock: productRequest.stock || product.stock,
-        price: productRequest.price || product.price,
-        productName: productRequest.productName || product.productName,
-        category: productRequest.category || product.category,
-        brand: productRequest.brand || product.brand,
-        description: productRequest.description || product.description,
+      const updateData: Partial<typeof product> & { pk: string } = {
+        pk: `product#${productRequest.sku}`,
       };
-      this.logger.debug("Product to be updated", updatedProduct);
 
-      await this.productsRepository.save(updatedProduct);
+      if (productRequest.productName) {
+        updateData.productName = productRequest.productName;
+        updateData.pkProduct = productRequest.productName;
+      }
+
+      if (productRequest.category) {
+        updateData.category = productRequest.category;
+      }
+
+      if (productRequest.brand) {
+        updateData.brand = productRequest.brand;
+      }
+
+      if (productRequest.price) {
+        updateData.price = productRequest.price;
+      }
+
+      if (productRequest.stock) {
+        updateData.stock = productRequest.stock;
+      }
+
+      if (productRequest.description) {
+        updateData.description = productRequest.description;
+      }
+
+      if (productRequest.brand || productRequest.price) {
+        const newBrand = productRequest.brand ?? product.brand;
+        const newPrice = productRequest.price ?? product.price;
+        updateData.pkBrandPrice = newBrand;
+        updateData.skBrandPrice = newPrice.toString();
+      }
+
+      if (
+        productRequest.category ||
+        productRequest.brand ||
+        productRequest.price
+      ) {
+        const newCategory = productRequest.category ?? product.category;
+        const newBrand = productRequest.brand ?? product.brand;
+        const newPrice = productRequest.price ?? product.price;
+        updateData.pkCategoryBrandPrice = newCategory;
+        updateData.skCategoryBrandPrice = `${newBrand}#${newPrice}`;
+      }
+
+      this.logger.debug("Product update data", updateData);
+
+      await this.productsRepository.update(updateData);
+
+      const updatedProduct = await this.productsRepository.getBySku(
+        `product#${productRequest.sku}`,
+      );
 
       this.logger.info("Product updated");
       return updatedProduct;

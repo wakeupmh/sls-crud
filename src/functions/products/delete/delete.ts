@@ -3,23 +3,23 @@ import type ProductsRepository from "../../../repositories/products";
 import type { DeleteProductRequest } from "./delete.request";
 
 export default class DeleteProduct {
-	constructor(
-		private readonly logger: LoggerProvider,
-		private readonly productsRepository: ProductsRepository,
-	) {}
+  constructor(
+    private readonly logger: LoggerProvider,
+    private readonly productsRepository: ProductsRepository,
+  ) {}
 
-	async execute(request: DeleteProductRequest) {
-		try {
-			this.logger.debug("Deleting product", request);
+  async execute(request: DeleteProductRequest) {
+    try {
+      this.logger.debug("Deleting product", request);
 
-			await this.productsRepository.delete(request.sku);
+      await this.productsRepository.delete(`product#${request.sku}`);
 
-			this.logger.info("Product deleted");
+      this.logger.info("Product deleted");
 
-			return;
-		} catch (error) {
-			this.logger.error("Error deleting product", error);
-			throw error;
-		}
-	}
+      return;
+    } catch (error) {
+      this.logger.error("Error deleting product", error);
+      throw error;
+    }
+  }
 }
