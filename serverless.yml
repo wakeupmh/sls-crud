@@ -37,73 +37,74 @@ provider:
 
 resources:
   Resources:
-   DynamoDBTable:
+   GroceryStoreTable:
     Type: 'AWS::DynamoDB::Table'
     Properties:
       TableName: '${self:service}-${sls:stage}'
       BillingMode: PAY_PER_REQUEST
+      DeletionProtectionEnabled: true
+      AttributeDefinitions:
+        - AttributeName: 'pk'
+          AttributeType: 'S'
+        - AttributeName: 'sk'
+          AttributeType: 'S'
+        - AttributeName: 'pkBrandPrice'
+          AttributeType: 'S'
+        - AttributeName: 'skBrandPrice'
+          AttributeType: 'S'
+        - AttributeName: 'pkCategoryBrandPrice'
+          AttributeType: 'S'
+        - AttributeName: 'skCategoryBrandPrice'
+          AttributeType: 'S'
+        - AttributeName: 'pkProduct'
+          AttributeType: 'S'
+        - AttributeName: 'stock'
+          AttributeType: 'N'
+        - AttributeName: 'price'
+          AttributeType: 'N'
 
-    AttributeDefinitions:
-      - AttributeName: 'pk'
-        AttributeType: 'S'
-      - AttributeName: 'sk'
-        AttributeType: 'S'
-      - AttributeName: 'pkBrandPrice'
-        AttributeType: 'S'
-      - AttributeName: 'skBrandPrice'
-        AttributeType: 'S'
-      - AttributeName: 'pkCategoryBrandPrice'
-        AttributeType: 'S'
-      - AttributeName: 'skCategoryBrandPrice'
-        AttributeType: 'S'
-      - AttributeName: 'pkProduct'
-        AttributeType: 'S'
-      - AttributeName: 'stock'
-        AttributeType: 'N'
-      - AttributeName: 'price'
-        AttributeType: 'N'
+      KeySchema:
+        - AttributeName: 'pk'
+          KeyType: 'HASH'
+        - AttributeName: 'sk'
+          KeyType: 'RANGE'
 
-    KeySchema:
-      - AttributeName: 'pk'
-        KeyType: 'HASH'
-      - AttributeName: 'sk'
-        KeyType: 'RANGE'
+      GlobalSecondaryIndexes:
+        - IndexName: 'brandPriceIndex'
+          KeySchema:
+            - AttributeName: 'pkBrandPrice'
+              KeyType: 'HASH'
+            - AttributeName: 'skBrandPrice'
+              KeyType: 'RANGE'
+          Projection:
+            ProjectionType: 'INCLUDE'
+            NonKeyAttributes:
+              - 'price'
+        - IndexName: 'categoryBrandPriceIndex'
+          KeySchema:
+            - AttributeName: 'pkCategoryBrandPrice'
+              KeyType: 'HASH'
+            - AttributeName: 'skCategoryBrandPrice'
+              KeyType: 'RANGE'
+          Projection:
+            ProjectionType: 'ALL'
+        - IndexName: 'productIndex'
+          KeySchema:
+            - AttributeName: 'pkProduct'
+              KeyType: 'HASH'
+          Projection:
+            ProjectionType: 'INCLUDE'
+            NonKeyAttributes:
+              - 'stock'
+        - IndexName: 'categoryPriceIndex'
+          KeySchema:
+            - AttributeName: 'pkCategoryPrice'
+              KeyType: 'HASH'
+            - AttributeName: 'price'
+              KeyType: 'RANGE'
+          Projection:
+            ProjectionType: 'ALL'
 
-    GlobalSecondaryIndexes:
-      - IndexName: 'brandPriceIndex'
-        KeySchema:
-          - AttributeName: 'pkBrandPrice'
-            KeyType: 'HASH'
-          - AttributeName: 'skBrandPrice'
-            KeyType: 'RANGE'
-        Projection:
-          ProjectionType: 'INCLUDE'
-          NonKeyAttributes:
-            - 'price'
-      - IndexName: 'categoryBrandPriceIndex'
-        KeySchema:
-          - AttributeName: 'pkCategoryBrandPrice'
-            KeyType: 'HASH'
-          - AttributeName: 'skCategoryBrandPrice'
-            KeyType: 'RANGE'
-        Projection:
-          ProjectionType: 'ALL'
-      - IndexName: 'productIndex'
-        KeySchema:
-          - AttributeName: 'pkProduct'
-            KeyType: 'HASH'
-        Projection:
-          ProjectionType: 'INCLUDE'
-          NonKeyAttributes:
-            - 'stock'
-      - IndexName: 'categoryPriceIndex'
-        KeySchema:
-          - AttributeName: 'pkCategoryPrice'
-            KeyType: 'HASH'
-          - AttributeName: 'price'
-            KeyType: 'RANGE'
-        Projection:
-          ProjectionType: 'ALL'
 functions:
   create:
     handler: src/functions/products/create/index.handler
