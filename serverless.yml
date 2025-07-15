@@ -58,6 +58,8 @@ resources:
           AttributeType: 'S'
         - AttributeName: 'pkProduct'
           AttributeType: 'S'
+        - AttributeName: 'pkCategoryPrice'
+          AttributeType: 'S'
         - AttributeName: 'stock'
           AttributeType: 'N'
         - AttributeName: 'price'
