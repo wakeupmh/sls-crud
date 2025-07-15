@@ -22,7 +22,7 @@ jobs:
           echo "ENVIRONMENT_NAME=${{ github.ref == 'refs/heads/main' && 'production' || 'dev' }}" >> $GITHUB_ENV
       - name: Set output
         id: set_env
-        run: echo "name=current_env={{ env.ENVIRONMENT_NAME }} >> $GITHUB_OUTPUT"
+        run: echo "current_env={{ env.ENVIRONMENT_NAME }} >> $GITHUB_OUTPUT"
 
   deploy:
     name: deploy
