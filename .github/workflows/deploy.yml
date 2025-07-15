@@ -7,17 +7,21 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     branches:
-      - dev*
+      - dev
 
 jobs:
+  set-env-name:
+    name: set env name
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set env name
+        id: current_env
+        run: echo "::set-output name=current_env::${{ github.ref == 'refs/heads/main' && 'production' || 'dev' }}"
   deploy:
-    strategy:
-      matrix:
-        environment: [dev, production]
     name: deploy
     runs-on: ubuntu-latest
     environment:
-      name: ${{ matrix.environment}}
+      name: ${{ needs.set-env-name.outputs.current_env }}
 
     steps:
       - name: checkout code
@@ -32,16 +36,16 @@ jobs:
       - name: install dependencies
         run: npm ci
 
-      - name: configure aws credentials for ${{ matrix.environment}}
+      - name: configure aws credentials for ${{ needs.set-environment.outputs.current_env }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: deploy with serverless to ${{ matrix.environment}}
-        if: success() && ${{ matrix.environment}}
-        run: npx serverless deploy --stage ${{ matrix.environment}}
+      - name: deploy with serverless to ${{ needs.set-environment.outputs.current_env }}
+        if: success() && ${{ needs.set-environment.outputs.current_env }}
+        run: npx serverless deploy --stage ${{ needs.set-environment.outputs.current_env }}
         env:
-          NODE_ENV: ${{ matrix.environment}}
+          NODE_ENV: ${{ needs.set-environment.outputs.current_env }}
           SERVERLESS_ACCESS_KEY: ${{ secrets.SERVERLESS_ACCESS_KEY }}
