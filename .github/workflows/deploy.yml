@@ -22,7 +22,7 @@ jobs:
           echo "ENVIRONMENT_NAME=${{ github.ref == 'refs/heads/main' && 'production' || 'dev' }}" >> $GITHUB_ENV
       - name: Set output
         id: set_env
-        run: echo "::set-output name=current_env::${{ env.ENVIRONMENT_NAME }}"
+        run: echo "name=current_env={{ env.ENVIRONMENT_NAME }} >> $GITHUB_OUTPUT"
 
   deploy:
     name: deploy
@@ -43,14 +43,14 @@ jobs:
       - name: install dependencies
         run: npm ci
 
-      - name: configure aws credentials for ${{ needs.set-environment.outputs.current_env }}
+      - name: configure aws credentials for ${{ env.ENVIRONMENT_NAME }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: deploy with serverless to ${{ needs.set-environment.outputs.current_env }}
+      - name: deploy with serverless to ${{ env.ENVIRONMENT_NAME }}
         if: success() && ${{ needs.set-environment.outputs.current_env }}
         run: npx serverless deploy --stage ${{ needs.set-environment.outputs.current_env }}
         env:
