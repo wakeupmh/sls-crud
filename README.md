@@ -210,8 +210,8 @@ npm run dev
 ### Deployment Workflow (GitHub Actions) CI/CD pipeline is established using GitHub Actions to automate the deployment of the serverless application.
 
 #### Branching Strategy
-- `feat/*` branches: Pushes to any branch prefixed with `feat/` (e.g., `feat/new-feature-x`) trigger a deployment to the dev stage .
-- `main` branch: Pushes to the main branch trigger a deployment to the prod stage, so, this ensures that only stable, reviewed code reaches the production environment.
+- `dev` branch: when a PR is opened it triggers a deployment to the dev stage.
+- `main` branch: Pushes to the main branch trigger a deployment to the prod stage, so, this ensures that only stable, reviewed code reaches the production environment due to branch rule set
 
 #### Workflow Steps
 The `deploy.yml` workflow orchestrates the following sequence:
