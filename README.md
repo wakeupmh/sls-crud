@@ -11,12 +11,12 @@ So, I created a serverless system for him. this means Mr. Zé doesn't have to wo
 
 ### Requirements Fulfilled
 
-**CRUD Operations**: Complete Create, Read, Update, Delete functionality
-**Advanced Querying**: Multi-dimensional filtering, sorting, and pagination
-**Serverless Architecture**: AWS Lambda + API Gateway + DynamoDB
-**Type Safety**: Full TypeScript implementation
-**Testing**: Comprehensive test suite with 75% function coverage
-**Production Ready**: Error handling, logging, and monitoring
+- **CRUD Operations**: Complete Create, Read, Update, Delete functionality
+- **Advanced Querying**: Multi-dimensional filtering, sorting, and pagination
+- **Serverless Architecture**: AWS Lambda + API Gateway + DynamoDB
+- **Type Safety**: Full TypeScript implementation
+- **Testing**: Comprehensive test suite with 75% function coverage
+- **Production Ready**: Error handling, logging, and monitoring
 
 ### Key Design Decisions
 
@@ -175,7 +175,9 @@ npm run dev
 ### Environment Variables
 ```bash
 AWS_REGION=us-east-1
-TABLE_NAME=products-table-dev
+AWS_ACCESS_KEY_ID=your-access-key
+AWS_SECRET_ACCESS_KEY=your-secret-key
+TABLE_NAME=grocery-store-dev
 ```
 
 ## Testing
@@ -210,8 +212,8 @@ npm run dev
 ### Deployment Workflow (GitHub Actions) CI/CD pipeline is established using GitHub Actions to automate the deployment of the serverless application.
 
 #### Branching Strategy
-- `feat/*` branches: Pushes to any branch prefixed with `feat/` (e.g., `feat/new-feature-x`) trigger a deployment to the dev stage .
-- `main` branch: Pushes to the main branch trigger a deployment to the prod stage, so, this ensures that only stable, reviewed code reaches the production environment.
+- `dev` branch: when a PR is opened it triggers a deployment to the dev stage.
+- `main` branch: Pushes to the main branch trigger a deployment to the prod stage, so, this ensures that only stable, reviewed code reaches the production environment due to branch rule set
 
 #### Workflow Steps
 The `deploy.yml` workflow orchestrates the following sequence:
@@ -220,8 +222,7 @@ The `deploy.yml` workflow orchestrates the following sequence:
 - Setup Node.js: Configures the Node.js runtime (v20) and caches npm dependencies for accelerated build times.
 - Install dependencies: Executes npm ci to install project dependencies, ensuring a clean and reproducible installation.
 - Configure AWS Credentials: Utilizes aws-actions/configure-aws-credentials to authenticate with AWS using repository secrets (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`).
-- Determine Stage: A shell script step dynamically ascertains the deployment stage (dev or prod) based on the github.ref_name (branch name). This value is exported as an environment variable (STAGE). The job fails if no matching stage is identified.
-- Deploy with Serverless to `${{ env.STAGE }}`: Invokes the Serverless Framework's deploy command, passing the determined stage `(--stage ${{ env.STAGE }}`)`. The `SERVERLESS_ACCESS_KEY` is provided via repository secrets for Serverless Dashboard integration.
+- Deploy with Serverless to `${{ needs.set-env-name.outputs.current_env }}`: Invokes the Serverless Framework's deploy command, passing the determined stage `(--stage ${{ needs.set-env-name.outputs.current_env }})`. The `SERVERLESS_ACCESS_KEY` is provided via repository secrets for Serverless Dashboard integration.
 
 #### Required Secrets
 The following secrets must be configured in your GitHub repository settings:

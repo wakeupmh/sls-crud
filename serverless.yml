@@ -12,14 +12,6 @@ plugins:
   - serverless-plugin-log-retention
   - serverless-iam-roles-per-function
 
-stages:
-  dev:
-    params:
-      tableName: 'grocery-store-${sls:stage}'
-  prod:
-    params:
-      tableName: 'grocery-store-${sls:stage}'
-
 provider:
   name: aws
   runtime: nodejs20.x
@@ -38,78 +30,77 @@ provider:
             - 'dynamodb:Query'
             - 'dynamodb:DescribeTable'
           Resource:
-            - 'arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${sls:stageParams.tableName}'
-            - 'arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${sls:stageParams.tableName}/index/*'
+            - 'arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:service}-${sls:stage}'
+            - 'arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:service}-${sls:stage}/index/*'
+  environment:
+    TABLE_NAME: ${self:service}-${sls:stage}
 
 resources:
   Resources:
-   DynamoDBTable:
+   GroceryStoreTable:
     Type: 'AWS::DynamoDB::Table'
     Properties:
-      TableName: '${sls:stageParams.tableName}'
+      TableName: '${self:service}-${sls:stage}'
       BillingMode: PAY_PER_REQUEST
+      DeletionProtectionEnabled: true
+      AttributeDefinitions:
+        - AttributeName: 'pk'
+          AttributeType: 'S'
+        - AttributeName: 'sk'
+          AttributeType: 'S'
+        - AttributeName: 'pkBrandPrice'
+          AttributeType: 'S'
+        - AttributeName: 'skBrandPrice'
+          AttributeType: 'S'
+        - AttributeName: 'pkCategoryBrandPrice'
+          AttributeType: 'S'
+        - AttributeName: 'skCategoryBrandPrice'
+          AttributeType: 'S'
+        - AttributeName: 'pkProduct'
+          AttributeType: 'S'
+        - AttributeName: 'pkCategoryPrice'
+          AttributeType: 'S'
+        - AttributeName: 'price'
+          AttributeType: 'N'
 
-    AttributeDefinitions:
-      - AttributeName: 'pk'
-        AttributeType: 'S'
-      - AttributeName: 'sk'
-        AttributeType: 'S'
-      - AttributeName: 'pkBrandPrice'
-        AttributeType: 'S'
-      - AttributeName: 'skBrandPrice'
-        AttributeType: 'S'
-      - AttributeName: 'pkCategoryBrandPrice'
-        AttributeType: 'S'
-      - AttributeName: 'skCategoryBrandPrice'
-        AttributeType: 'S'
-      - AttributeName: 'pkProduct'
-        AttributeType: 'S'
-      - AttributeName: 'stock'
-        AttributeType: 'N'
-      - AttributeName: 'price'
-        AttributeType: 'N'
+      KeySchema:
+        - AttributeName: 'pk'
+          KeyType: 'HASH'
+        - AttributeName: 'sk'
+          KeyType: 'RANGE'
 
-    KeySchema:
-      - AttributeName: 'pk'
-        KeyType: 'HASH'
-      - AttributeName: 'sk'
-        KeyType: 'RANGE'
+      GlobalSecondaryIndexes:
+        - IndexName: 'brandPriceIndex'
+          KeySchema:
+            - AttributeName: 'pkBrandPrice'
+              KeyType: 'HASH'
+            - AttributeName: 'skBrandPrice'
+              KeyType: 'RANGE'
+          Projection:
+            ProjectionType: 'KEYS_ONLY'
+        - IndexName: 'categoryBrandPriceIndex'
+          KeySchema:
+            - AttributeName: 'pkCategoryBrandPrice'
+              KeyType: 'HASH'
+            - AttributeName: 'skCategoryBrandPrice'
+              KeyType: 'RANGE'
+          Projection:
+            ProjectionType: 'KEYS_ONLY'
+        - IndexName: 'productIndex'
+          KeySchema:
+            - AttributeName: 'pkProduct'
+              KeyType: 'HASH'
+          Projection:
+            ProjectionType: 'KEYS_ONLY'
+        - IndexName: 'categoryPriceIndex'
+          KeySchema:
+            - AttributeName: 'pkCategoryPrice'
+              KeyType: 'HASH'
+            - AttributeName: 'price'
+              KeyType: 'RANGE'
+          Projection:
+            ProjectionType: 'KEYS_ONLY'
 
-    GlobalSecondaryIndexes:
-      - IndexName: 'brandPriceIndex'
-        KeySchema:
-          - AttributeName: 'pkBrandPrice'
-            KeyType: 'HASH'
-          - AttributeName: 'skBrandPrice'
-            KeyType: 'RANGE'
-        Projection:
-          ProjectionType: 'INCLUDE'
-          NonKeyAttributes:
-            - 'price'
-      - IndexName: 'categoryBrandPriceIndex'
-        KeySchema:
-          - AttributeName: 'pkCategoryBrandPrice'
-            KeyType: 'HASH'
-          - AttributeName: 'skCategoryBrandPrice'
-            KeyType: 'RANGE'
-        Projection:
-          ProjectionType: 'ALL'
-      - IndexName: 'productIndex'
-        KeySchema:
-          - AttributeName: 'pkProduct'
-            KeyType: 'HASH'
-        Projection:
-          ProjectionType: 'INCLUDE'
-          NonKeyAttributes:
-            - 'stock'
-      - IndexName: 'categoryPriceIndex'
-        KeySchema:
-          - AttributeName: 'pkCategoryPrice'
-            KeyType: 'HASH'
-          - AttributeName: 'price'
-            KeyType: 'RANGE'
-        Projection:
-          ProjectionType: 'ALL'
 functions:
   create:
     handler: src/functions/products/create/index.handler
@@ -117,38 +108,33 @@ functions:
       - httpApi:
           path: /products/create
           method: post
-    environment:
-      TABLE_NAME: ${sls:stageParams.tableName}
+
   get:
     handler: src/functions/products/get/index.handler
     events:
       - httpApi:
           path: /products/get
           method: get
-    environment:
-      TABLE_NAME: ${sls:stageParams.tableName}
+
   getOne:
     handler: src/functions/products/get-one/index.handler
     events:
       - httpApi:
           path: /products/get/{id}
           method: get
-    environment:
-      TABLE_NAME: ${sls:stageParams.tableName}
+
   update:
     handler: src/functions/products/update/index.handler
     events:
       - httpApi:
           path: /products/update
           method: put
-    environment:
-      TABLE_NAME: ${sls:stageParams.tableName}
+
   delete:
     handler: src/functions/products/delete/index.handler
     events:
       - httpApi:
           path: /products/delete
           method: delete
-    environment:
-      TABLE_NAME: ${sls:stageParams.tableName}
+
 
