@@ -13,10 +13,17 @@ jobs:
   set-env-name:
     name: set env name
     runs-on: ubuntu-latest
+    outputs:
+      current_env: ${{ steps.set_env.outputs.current_env }}
     steps:
       - name: Set env name
         id: current_env
-        run: echo "::set-output name=current_env::${{ github.ref == 'refs/heads/main' && 'production' || 'dev' }}"
+        run: |
+          echo "ENVIRONMENT_NAME=${{ github.ref == 'refs/heads/main' && 'production' || 'dev' }}" >> $GITHUB_ENV
+      - name: Set output
+        id: set_env
+        run: echo "::set-output name=current_env::${{ env.ENVIRONMENT_NAME }}"
+
   deploy:
     name: deploy
     runs-on: ubuntu-latest
