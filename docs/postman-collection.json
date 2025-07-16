@@ -50,7 +50,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"sku\": \"{{test_sku}}\",\n  \"productName\": \"MacBook Pro 16-inch\",\n  \"category\": \"Electronics\",\n  \"brand\": \"Apple\",\n  \"price\": 2499.99,\n  \"stock\": 25,\n  \"description\": \"16-inch MacBook Pro with M2 Pro chip, 16GB RAM, 512GB SSD\"\n}"
+              "raw": "{\n  \"sku\": \"{{test_sku}}\",\n  \"productName\": \"Bolinho Caipira\",\n  \"category\": \"Food\",\n  \"brand\": \"Gradma Xanda\",\n  \"price\": 2499.99,\n  \"stock\": 25,\n  \"description\": \"SJC's deep-fried cornmeal dumpling filled with seasoned meat\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/products/create",
@@ -100,50 +100,6 @@
               "path": ["products", "get", "{{test_sku}}"]
             },
             "description": "Retrieves a single product by its SKU. Returns 404 if product not found."
-          },
-          "response": []
-        },
-        {
-          "name": "List All Products",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test(\"Response has products array\", function () {",
-                  "    const jsonData = pm.response.json();",
-                  "    pm.expect(jsonData).to.have.property('products');",
-                  "    pm.expect(jsonData.products).to.be.an('array');",
-                  "});",
-                  "",
-                  "pm.test(\"Products have required fields\", function () {",
-                  "    const jsonData = pm.response.json();",
-                  "    if (jsonData.products.length > 0) {",
-                  "        const product = jsonData.products[0];",
-                  "        pm.expect(product).to.have.property('sku');",
-                  "        pm.expect(product).to.have.property('productName');",
-                  "        pm.expect(product).to.have.property('price');",
-                  "        pm.expect(product).to.have.property('stock');",
-                  "    }",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/products/get",
-              "host": ["{{base_url}}"],
-              "path": ["products", "get"]
-            },
-            "description": "Lists all products without any filters. Returns paginated results with default page size of 20."
           },
           "response": []
         },
@@ -228,53 +184,6 @@
               ]
             },
             "description": "Filters products by brand. Uses the brandPriceIndex GSI for efficient querying."
-          },
-          "response": []
-        },
-        {
-          "name": "Filter by Price Range",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test(\"All products within price range\", function () {",
-                  "    const jsonData = pm.response.json();",
-                  "    if (jsonData.products.length > 0) {",
-                  "        jsonData.products.forEach(product => {",
-                  "            pm.expect(product.price).to.be.at.least(1000);",
-                  "            pm.expect(product.price).to.be.at.most(3000);",
-                  "        });",
-                  "    }",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/products/get?minPrice=1000&maxPrice=3000",
-              "host": ["{{base_url}}"],
-              "path": ["products", "get"],
-              "query": [
-                {
-                  "key": "minPrice",
-                  "value": "1000"
-                },
-                {
-                  "key": "maxPrice",
-                  "value": "3000"
-                }
-              ]
-            },
-            "description": "Filters products by price range. Requires at least one other filter (category, brand, or productName) for efficient querying."
           },
           "response": []
         },
@@ -388,13 +297,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/products/get?productName=MacBook Pro 16-inch",
+              "raw": "{{base_url}}/products/get?productName=Bolinho Caipira",
               "host": ["{{base_url}}"],
               "path": ["products", "get"],
               "query": [
                 {
                   "key": "productName",
-                  "value": "MacBook Pro 16-inch"
+                  "value": "Bolinho Caipira"
                 }
               ]
             },
@@ -441,10 +350,10 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"sku\": \"{{test_sku}}\",\n  \"price\": 2299.99,\n  \"stock\": 20,\n  \"description\": \"Updated: 16-inch MacBook Pro with M2 Pro chip, 16GB RAM, 512GB SSD - Special Price!\"\n}"
+              "raw": "{\n  \"sku\": \"{{test_sku}}\",\n  \"price\": 2299.99,\n  \"stock\": 20,\n  \"description\": \"Updated: SJC's deep-fried cornmeal dumpling filled with seasoned meat - Special Price!\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/products/update",
+              "raw": "{{base_url}}/products/update/{{test_sku}}",
               "host": ["{{base_url}}"],
               "path": ["products", "update"]
             },
@@ -475,12 +384,8 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"sku\": \"{{test_sku}}\"\n}"
-            },
             "url": {
-              "raw": "{{base_url}}/products/delete",
+              "raw": "{{base_url}}/products/delete/{{test_sku}}",
               "host": ["{{base_url}}"],
               "path": ["products", "delete"]
             },
@@ -506,7 +411,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"sku\": \"IPHONE-15-PRO\",\n  \"productName\": \"iPhone 15 Pro\",\n  \"category\": \"Electronics\",\n  \"brand\": \"Apple\",\n  \"price\": 999.99,\n  \"stock\": 50,\n  \"description\": \"iPhone 15 Pro with A17 Pro chip, 128GB storage\"\n}"
+              "raw": "{\n  \"sku\": \"IPHONE-15-PRO\",\n  \"productName\": \"iPhone 15 Pro\",\n  \"category\": \"Food\",\n  \"brand\": \"Gradma Xanda\",\n  \"price\": 999.99,\n  \"stock\": 50,\n  \"description\": \"iPhone 15 Pro with A17 Pro chip, 128GB storage\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/products/create",
@@ -528,7 +433,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"sku\": \"DELL-XPS-13\",\n  \"productName\": \"Dell XPS 13\",\n  \"category\": \"Electronics\",\n  \"brand\": \"Dell\",\n  \"price\": 1299.99,\n  \"stock\": 15,\n  \"description\": \"Dell XPS 13 laptop with Intel i7, 16GB RAM, 512GB SSD\"\n}"
+              "raw": "{\n  \"sku\": \"DELL-XPS-13\",\n  \"productName\": \"Dell XPS 13\",\n  \"category\": \"Food\",\n  \"brand\": \"Dell\",\n  \"price\": 1.99,\n  \"stock\": 15,\n  \"description\": \"Dell XPS 13 laptop with Intel i7, 16GB RAM, 512GB SSD\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/products/create",
@@ -640,7 +545,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"sku\": \"{{test_sku}}\",\n  \"productName\": \"Duplicate Product\",\n  \"category\": \"Electronics\",\n  \"brand\": \"TestBrand\",\n  \"price\": 99.99,\n  \"stock\": 10,\n  \"description\": \"This should fail due to duplicate SKU\"\n}"
+              "raw": "{\n  \"sku\": \"{{test_sku}}\",\n  \"productName\": \"Duplicate Product\",\n  \"category\": \"Food\",\n  \"brand\": \"TestBrand\",\n  \"price\": 99.99,\n  \"stock\": 10,\n  \"description\": \"This should fail due to duplicate SKU\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/products/create",

@@ -20,7 +20,7 @@ async function lambdaHandler(event: any, _: any) {
 
   return {
     statusCode: 200,
-    body: products,
+    content: products,
     meta: {
       page: request.page || 1,
       pageSize: request.pageSize || 10,
