@@ -1,7 +1,7 @@
 # Serverless Grocery Store Catalog API
 
 In a quiet street in São José dos Campos, where the aroma of fresh bread mingles with the scent of brewed coffee, sits "Videira's Mini-Market." It's not a giant supermarket; it's that familiar corner store everyone knows, with Mr. Zé Videira at the cash register, always ready for a chat.
-There, you'll find everything from everyday dog's food, thread seal tape, eletric shower to homemade "Pão de Queijo" from Dona Joana, Mr. Zé's neighbor.
+There, you'll find everything from everyday dog's food, thread seal tape, eletric shower to homemade "Bolinho Caipira" from Ms. Xanda, Mr. Zé's neighbor.
 
 Mr. Zé always jotted everything down in notebooks, in tiny handwriting. However over time, the clientele grew, and he started feeling the need to modernize things. "If I could organize my products better, know what's selling more, what's missing..." he'd think, scratching his graying head.
 
@@ -222,7 +222,7 @@ The `deploy.yml` workflow orchestrates the following sequence:
 - Setup Node.js: Configures the Node.js runtime (v20) and caches npm dependencies for accelerated build times.
 - Install dependencies: Executes npm ci to install project dependencies, ensuring a clean and reproducible installation.
 - Configure AWS Credentials: Utilizes aws-actions/configure-aws-credentials to authenticate with AWS using repository secrets (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`).
-- Deploy with Serverless to `${{ needs.set-env-name.outputs.current_env }}`: Invokes the Serverless Framework's deploy command, passing the determined stage `(--stage ${{ needs.set-env-name.outputs.current_env }})`. The `SERVERLESS_ACCESS_KEY` is provided via repository secrets for Serverless Dashboard integration.
+- Deploy with Serverless to `${{ github.ref == 'refs/heads/main' && 'production' || 'dev' }}`: Invokes the Serverless Framework's deploy command, passing the determined stage `(--stage ${{ github.ref == 'refs/heads/main' && 'production' || 'dev' }})`. The `SERVERLESS_ACCESS_KEY` is provided via repository secrets for Serverless Dashboard integration.
 
 #### Required Secrets
 The following secrets must be configured in your GitHub repository settings:

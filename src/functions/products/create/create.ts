@@ -1,6 +1,7 @@
 import type { Product } from "../../../domain/products";
 import type LoggerProvider from "../../../providers/logging/logger";
 import type ProductsRepository from "../../../repositories/products";
+import { BadRequestException } from "../../../shared/errors";
 import type { CreateProductRequest } from "./create.request";
 
 export default class CreateProduct {
@@ -37,6 +38,14 @@ export default class CreateProduct {
 
       return product;
     } catch (error) {
+      if (
+        error instanceof Error &&
+        error.name.includes("ConditionalCheckFailedException")
+      ) {
+        this.logger.error("Product already exists", error);
+        throw new BadRequestException("Product already exists");
+      }
+
       this.logger.error("Error creating product", error);
       throw error;
     }

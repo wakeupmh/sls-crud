@@ -50,7 +50,6 @@ Complete CRUD operations and advanced querying:
 - **List All Products**: Gets all products (paginated)
 - **Filter by Category**: Filters products by category
 - **Filter by Brand**: Filters products by brand
-- **Filter by Price Range**: Filters by price range
 - **Complex Filter with Sorting**: Multi-criteria filtering with sorting
 - **Search by Product Name**: Exact name search
 - **Update Product**: Partial product updates

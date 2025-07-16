@@ -10,18 +10,18 @@ const loggerProvider = new LoggerProvider();
 const productsRepository = new ProductsRepository(loggerProvider);
 
 async function lambdaHandler(event: any, _: any) {
-	const request = await validate(getOneProductRequestSchema, {
-		sku: event.pathParameters.sku,
-	});
+  const request = await validate(getOneProductRequestSchema, {
+    sku: event.pathParameters.sku,
+  });
 
-	const getOneProduct = new GetOneProduct(loggerProvider, productsRepository);
+  const getOneProduct = new GetOneProduct(loggerProvider, productsRepository);
 
-	const product = await getOneProduct.execute(request);
+  const product = await getOneProduct.execute(request);
 
-	return {
-		statusCode: 200,
-		body: product,
-	};
+  return {
+    statusCode: 200,
+    content: product,
+  };
 }
 
 export const handler = middlewareFactory.create(lambdaHandler);

@@ -70,6 +70,7 @@ export default class ProductsRepository {
       TableName: this.tableName,
       Key: {
         pk: product.pk,
+        sk: product.pk,
       },
       UpdateExpression: `SET ${updateExpressions.join(", ")}`,
       ExpressionAttributeNames: expressionAttributeNames,
@@ -86,6 +87,7 @@ export default class ProductsRepository {
       TableName: this.tableName,
       Key: {
         pk,
+        sk: pk,
       },
     };
     this.logger.debug("Deleting product: ", params);
@@ -98,6 +100,7 @@ export default class ProductsRepository {
       TableName: this.tableName,
       Key: {
         pk,
+        sk: pk,
       },
     };
     this.logger.debug("Getting product by sku: ", params);
@@ -136,7 +139,9 @@ export default class ProductsRepository {
         queryType: "productNameIndex",
         params: { productName: filters.productName },
       });
-    } else if (
+    }
+
+    if (
       filters.category &&
       filters.brand &&
       (filters.minPrice || filters.maxPrice)
@@ -200,7 +205,9 @@ export default class ProductsRepository {
         queryType: "brandPriceIndex",
         params: { brand: filters.brand },
       });
-    } else {
+    }
+
+    if (queryPromises.length === 0) {
       throw new SystemException(
         "At least one filter criterion (category, brand, or productName) must be provided for efficient queries.",
       );
@@ -296,7 +303,14 @@ export default class ProductsRepository {
     const batchPromises = batches.map(async (batchKeys) => {
       const requestItems: Record<string, any> = {
         [this.tableName]: {
-          Keys: batchKeys.map((key) => ({ pk: key })),
+          Keys: batchKeys.map((key) => ({
+            pk: {
+              S: key,
+            },
+            sk: {
+              S: key,
+            },
+          })),
         },
       };
 
@@ -309,7 +323,7 @@ export default class ProductsRepository {
         }
 
         return response.Responses[this.tableName].map((item) =>
-          this.convertToPresentation(item),
+          this.convertToPresentation(item, "batchGet"),
         );
       } catch (error: any) {
         this.logger.error("Error in batch get products:", error);
@@ -550,7 +564,21 @@ export default class ProductsRepository {
     }
   }
 
-  private convertToPresentation(item: any): PresentationProduct {
+  private convertToPresentation(
+    item: any,
+    commandType?: string,
+  ): PresentationProduct {
+    if (commandType === "batchGet") {
+      return {
+        sku: item.pk.S || "",
+        stock: Number(item.stock.N || 0),
+        price: Number(item.price.N || 0),
+        productName: item.productName.S || "",
+        category: item.category.S || "",
+        brand: item.brand.S || "",
+        description: item.description.S || "",
+      };
+    }
     return {
       sku: item.pk || "",
       stock: Number(item.stock || 0),
