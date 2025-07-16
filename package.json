@@ -27,7 +27,8 @@
     "format": "npx @biomejs/biome format --write .",
     "lint": "npx @biomejs/biome lint .",
     "build": "npx tsc",
-    "dev": "npm run build && sls offline --stage dev"
+    "dev": "npm run build && sls offline --stage dev",
+    "debug": "export $(cat .aws.env | xargs) && export SLS_DEBUG=* && sls offline start --reloadHandler --noTimeout --stage dev"
   },
   "dependencies": {
     "@aws-lambda-powertools/logger": "~2.23.0",

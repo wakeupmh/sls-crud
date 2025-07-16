@@ -4,13 +4,23 @@ service: grocery-store
 
 package:
   individually: true
+
+custom:
+  stages:
+    - dev
+    - production
+  stage: ${opt:stage, 'dev'}
+
 build:
   esbuild:
     minify: true
+    sourcemap: true
+    keepNames: true
 
 plugins:
   - serverless-plugin-log-retention
   - serverless-iam-roles-per-function
+  - serverless-offline
 
 provider:
   name: aws
@@ -18,6 +28,12 @@ provider:
   logRetentionInDays: 7
   versionFunctions: false
   region: us-east-1
+  httpApi:
+    cors: true
+  environment:
+    NODE_OPTIONS: "--enable-source-maps"
+    TABLE_NAME: ${self:service}-${sls:stage}
+
   iam:
     role:
       statements:
@@ -32,8 +48,6 @@ provider:
           Resource:
             - 'arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:service}-${sls:stage}'
             - 'arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/${self:service}-${sls:stage}/index/*'
-  environment:
-    TABLE_NAME: ${self:service}-${sls:stage}
 
 resources:
   Resources:
@@ -116,25 +130,25 @@ functions:
           path: /products/get
           method: get
 
-  getOne:
+  get-one:
     handler: src/functions/products/get-one/index.handler
     events:
       - httpApi:
-          path: /products/get/{id}
+          path: /products/get/{sku}
           method: get
 
   update:
     handler: src/functions/products/update/index.handler
     events:
       - httpApi:
-          path: /products/update
+          path: /products/update/{sku}
           method: put
 
   delete:
     handler: src/functions/products/delete/index.handler
     events:
       - httpApi:
-          path: /products/delete
+          path: /products/delete/{sku}
           method: delete
 
 

@@ -59,24 +59,32 @@ describe("GetOneProduct", () => {
       expect(mockProductsRepository.getBySku).toHaveBeenCalledWith(
         "product#TEST-SKU-001",
       );
-      expect(result).toEqual(mockProduct);
+      expect(result).toEqual({
+        sku: mockProduct.sku,
+        stock: mockProduct.stock,
+        price: mockProduct.price,
+        productName: mockProduct.productName,
+        category: mockProduct.category,
+        brand: mockProduct.brand,
+        description: mockProduct.description,
+      });
       expect(mockLogger.debug).toHaveBeenCalledWith("Getting product", request);
       expect(mockLogger.info).toHaveBeenCalledWith("Product retrieved");
     });
 
-    it("should return null when product is not found", async () => {
+    it("should throw NotFoundException when product is not found", async () => {
       const request: GetOneProductRequest = {
         sku: "NON-EXISTENT-SKU",
       };
       vi.mocked(mockProductsRepository.getBySku).mockResolvedValue(null);
 
-      const result = await getOneProduct.execute(request);
+      await expect(getOneProduct.execute(request)).rejects.toThrow(
+        "Product not found for sku NON-EXISTENT-SKU",
+      );
 
       expect(mockProductsRepository.getBySku).toHaveBeenCalledWith(
         "product#NON-EXISTENT-SKU",
       );
-      expect(result).toBeNull();
-      expect(mockLogger.info).toHaveBeenCalledWith("Product retrieved");
     });
 
     it("should handle repository errors", async () => {

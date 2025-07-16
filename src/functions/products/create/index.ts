@@ -12,12 +12,12 @@ const productsRepository = new ProductsRepository(loggerProvider);
 const createProduct = new CreateProduct(loggerProvider, productsRepository);
 
 async function lambdaHandler(event: any, _: any) {
-	const request = await validate(createProductRequestSchema, event.body);
-	const product = await createProduct.execute(request);
-	return {
-		statusCode: 201,
-		body: product,
-	};
+  const request = await validate(createProductRequestSchema, event.body);
+  const product = await createProduct.execute(request);
+  return {
+    statusCode: 201,
+    content: product,
+  };
 }
 
 export const handler = middlewareFactory.create(lambdaHandler);

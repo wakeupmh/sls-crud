@@ -5,3 +5,4 @@ dist
 lefthook.lock
 coverage
 .DS_Store
+.aws.env
