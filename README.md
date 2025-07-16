@@ -1,7 +1,7 @@
 # Serverless Grocery Store Catalog API
 
 In a quiet street in São José dos Campos, where the aroma of fresh bread mingles with the scent of brewed coffee, sits "Videira's Mini-Market." It's not a giant supermarket; it's that familiar corner store everyone knows, with Mr. Zé Videira at the cash register, always ready for a chat.
-There, you'll find everything from everyday dog's food, thread seal tape, eletric shower to homemade "Pão de Queijo" from Dona Joana, Mr. Zé's neighbor.
+There, you'll find everything from everyday dog's food, thread seal tape, eletric shower to homemade "Bolinho Caipira" from Ms. Xanda, Mr. Zé's neighbor.
 
 Mr. Zé always jotted everything down in notebooks, in tiny handwriting. However over time, the clientele grew, and he started feeling the need to modernize things. "If I could organize my products better, know what's selling more, what's missing..." he'd think, scratching his graying head.
 
